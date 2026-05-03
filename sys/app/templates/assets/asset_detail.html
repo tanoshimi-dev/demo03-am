@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ asset.name }}{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Asset Detail</p>
+        <h1>{{ asset.name }}</h1>
+    </div>
+    <a class="button button-secondary" href="{% url 'assets:list' %}">資産一覧へ戻る</a>
+</div>
+
+<section class="card">
+    <dl class="detail-list">
+        <dt>資産コード</dt>
+        <dd>{{ asset.asset_code }}</dd>
+        <dt>カテゴリ</dt>
+        <dd>{{ asset.category.name }}</dd>
+        <dt>状態</dt>
+        <dd>{{ asset.get_status_display }}</dd>
+        <dt>シリアル番号</dt>
+        <dd>{{ asset.serial_number }}</dd>
+        <dt>メーカー</dt>
+        <dd>{{ asset.manufacturer|default:"-" }}</dd>
+        <dt>型番</dt>
+        <dd>{{ asset.model_name|default:"-" }}</dd>
+        <dt>保管場所</dt>
+        <dd>{{ asset.location|default:"-" }}</dd>
+        <dt>取得日</dt>
+        <dd>{{ asset.acquired_on|date:"Y-m-d"|default:"-" }}</dd>
+        <dt>貸出可否</dt>
+        <dd>{% if asset.is_available_for_loan %}貸出可能{% else %}貸出不可{% endif %}</dd>
+        <dt>メモ</dt>
+        <dd>{{ asset.notes|linebreaksbr|default:"-" }}</dd>
+    </dl>
+</section>
+
+{% if can_manage_assets %}
+<section class="card notice-card">
+    <h2>管理者向け表示</h2>
+    <p>カテゴリ、状態、保管場所の更新は Django Admin から行えます。</p>
+</section>
+{% else %}
+<section class="card notice-card">
+    <h2>利用者向け表示</h2>
+    <p>利用者は台帳情報を参照できます。貸出申請導線は後続 Step で追加します。</p>
+</section>
+{% endif %}
+{% endblock %}
