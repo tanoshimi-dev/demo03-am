@@ -2,7 +2,7 @@
 
 `demo03_am` は、tanoshimi.dev 向けの **IT資産・端末管理デモ** を整理・実装していくための作業ディレクトリです。
 
-現時点ではアプリ本体よりも先に計画を固める段階で、主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
+現時点では `Step 1` として Django / PostgreSQL / Docker Compose の最小土台まで実装済みで、主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
 
 ## 概要
 
@@ -20,7 +20,7 @@
 
 ## 現在の位置づけ
 
-このディレクトリは、IT資産管理デモの仕様整理と実装準備を進めるための場所です。現状のリポジトリにはアプリケーションコードはほとんど含まれておらず、まずは計画書ベースで構成と実装順を固める想定です。
+このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 1 として、Django プロジェクト本体、PostgreSQL 接続設定、Docker Compose によるローカル起動基盤まで整備しています。
 
 ## ローカル開発の前提
 
@@ -30,10 +30,36 @@ docker-composeファイルのサービス名は、tdev-demo03-を接頭辞とし
 
 - アプリ構成: Django 中心のモノリシック構成
 - データベース: PostgreSQL
-- 開発環境: Docker Compose で `web` / `db` を起動
+- 開発環境: Docker Compose で `tdev-demo03-web` / `tdev-demo03-db` / `tdev-demo03-adminer` を起動
 - 本番環境: tanoshimi.dev 上の専用サブドメイン（`demo03-am.tanoshimi.dev`）
 
-実装が進んだら、この README には実際の起動手順やディレクトリ構成を追記します。
+## ローカル起動手順
+
+1. `sys\.env.example` を `sys\.env` にコピーする
+2. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml up --build` を実行する
+3. ブラウザで `http://localhost:18003` を開く
+4. DB ビューアは `http://localhost:18081` で開く
+
+## 現在のディレクトリ構成
+
+```text
+demo03_am/
+  doc/
+  sys/
+    .env
+    .env.example
+    requirements.txt
+    app/
+      manage.py
+      config/
+      templates/
+      static/
+    infra/
+      docker/
+        web/
+      compose/
+        docker-compose.yml
+```
 
 ## ドキュメント案内
 

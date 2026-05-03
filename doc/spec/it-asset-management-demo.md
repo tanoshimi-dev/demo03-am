@@ -146,23 +146,27 @@
 
 ```text
 demo03_am/
-  app/
-    manage.py
-    config/
-    accounts/
-    assets/
-    loans/
-    incidents/
-    inventory/
-    auditlogs/
-    templates/
-    static/
-  infra/
-    docker/
-    compose/
   doc/
     spec/
     spec-auth/
+  sys/
+    .env
+    .env.example
+    requirements.txt
+    app/
+      manage.py
+      config/
+      accounts/
+      assets/
+      loans/
+      incidents/
+      inventory/
+      auditlogs/
+      templates/
+      static/
+    infra/
+      docker/
+      compose/
 ```
 
 この構成により、**Django らしい一体感のある実装**を保ちながら、IT資産管理デモに必要な業務ルール、管理画面、監査性を過不足なく表現しやすくします。

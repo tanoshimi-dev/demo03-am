@@ -1,0 +1,59 @@
+services:
+  tdev-demo03-web:
+    build:
+      context: ../../..
+      dockerfile: sys/infra/docker/web/Dockerfile
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-demo03-am-local-development-secret-key}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:18003}
+      POSTGRES_DB: ${POSTGRES_DB:-demo03_am}
+      POSTGRES_USER: ${POSTGRES_USER:-demo03_am}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo03_am}
+      POSTGRES_HOST: ${POSTGRES_HOST:-tdev-demo03-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+    depends_on:
+      tdev-demo03-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${APP_PORT:-18003}:8000"
+    volumes:
+      - ../../../sys/app:/app
+
+  tdev-demo03-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-demo03_am}
+      POSTGRES_USER: ${POSTGRES_USER:-demo03_am}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo03_am}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${DB_PORT:-15433}:5432"
+    volumes:
+      - tdev-demo03-db-data:/var/lib/postgresql/data
+
+  tdev-demo03-adminer:
+    image: adminer:4
+    depends_on:
+      tdev-demo03-db:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: ${POSTGRES_HOST:-tdev-demo03-db}
+    ports:
+      - "${ADMINER_PORT:-18081}:8080"
+
+volumes:
+  tdev-demo03-db-data:

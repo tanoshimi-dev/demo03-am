@@ -2,6 +2,9 @@
 
 - When the user prompt specifies a development plan file such as `doc\dev-plan\<phase>\dev-plan.md` and a target step, read that development plan first and limit the implementation scope to the specified step unless the user explicitly asks for a wider scope.
 - Treat `doc\spec\it-asset-management-demo.md` as the implementation source of truth, and use `doc\spec-auth\prompt.md` for auth-related work.
+- Keep all runnable project resources such as app code, infrastructure, and future e2e assets under `sys\`.
+- Keep environment files and dependency manifests under `sys\` as well.
+- Keep project documentation under `doc\`.
 
 - After implementing a requested step, always create or update a working result document under the sibling `result` directory of the target development plan.
 - If the target plan is `doc\dev-plan\01\dev-plan.md` and the user asks for `step1`, write the result document to `doc\dev-plan\01\result\step1-result.md`.
