@@ -16,7 +16,7 @@
 [ここに依頼内容を書く]
 
 期待すること:
-- doc\spec\it-asset-management-demo-plan.md に沿って進める
+- doc\spec\it-asset-management-demo.md に沿って進める
 - Python / Django 前提を崩さない
 - 必要なら関連ドキュメントも更新する
 - 変更は今回のタスクに必要な範囲へ絞る
@@ -29,7 +29,7 @@
 
 1. doc\tips\copilot\01-mandatory-rules.md
 2. doc\tips\copilot\02-reference-order.md
-3. doc\spec\it-asset-management-demo-plan.md
+3. doc\spec\it-asset-management-demo.md
 4. doc\spec-auth\prompt.md
 
 今回のタスク:
@@ -49,7 +49,7 @@
 
 1. doc\tips\copilot\01-mandatory-rules.md
 2. doc\tips\copilot\02-reference-order.md
-3. doc\spec\it-asset-management-demo-plan.md
+3. doc\spec\it-asset-management-demo.md
 
 今回のタスク:
 [機能実装の依頼を書く]
@@ -61,7 +61,29 @@
 - 必要なら spec や README も更新する
 ```
 
-## 4. ドキュメント更新用テンプレート
+## 4. dev-plan step 実装用テンプレート
+
+```text
+作業前に以下を読んでください。
+
+1. doc\tips\copilot\01-mandatory-rules.md
+2. doc\tips\copilot\02-reference-order.md
+3. doc\spec\it-asset-management-demo.md
+4. 対象の doc\dev-plan\<phase>\dev-plan.md
+5. 認証に関わる場合は doc\spec-auth\prompt.md
+
+今回のタスク:
+Implement E:\dev\vs_code\products\tanoshimi.dev\sys\demo03_am\doc\dev-plan\01\dev-plan.md step1.
+
+注意:
+- 指定された step の範囲だけを実装する
+- 作業結果は `doc\dev-plan\01\result\step1-result.md` に出力する
+- 確認は Docker コンテナで実際に実施する
+- Docker で確認できない場合は、その理由を result 文書にも明記する
+- 必要なら spec、README、dev-plan も更新する
+```
+
+## 5. ドキュメント更新用テンプレート
 
 ```text
 作業前に以下を読んでください。
@@ -69,7 +91,7 @@
 1. doc\tips\copilot\01-mandatory-rules.md
 2. doc\tips\copilot\02-reference-order.md
 3. README.md
-4. doc\spec\it-asset-management-demo-plan.md
+4. doc\spec\it-asset-management-demo.md
 5. 関連する既存ドキュメント
 
 今回のタスク:
@@ -81,9 +103,10 @@
 - 既存文書との重複や矛盾を避ける
 ```
 
-## 5. 運用のコツ
+## 6. 運用のコツ
 
 - 固定ルールは `doc\tips\copilot` に寄せる
 - タスク本文には「今回だけ違うこと」を中心に書く
 - 依頼のたびに読むべき文書を明示する
 - 認証と業務ルールはフロントエンドへ逃がさない
+- dev-plan 実装では step と result 出力先をセットで指定する

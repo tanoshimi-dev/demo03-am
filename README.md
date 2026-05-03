@@ -2,7 +2,7 @@
 
 `demo03_am` は、tanoshimi.dev 向けの **IT資産・端末管理デモ** を整理・実装していくための作業ディレクトリです。
 
-現時点ではアプリ本体よりも先に計画を固める段階で、主要な方向性は `doc/spec/it-asset-management-demo-plan.md` を基準にしています。
+現時点ではアプリ本体よりも先に計画を固める段階で、主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
 
 ## 概要
 
@@ -16,7 +16,7 @@
 
 詳細なスコープ、ユースケース、エピック分割、MVP の考え方は以下の計画書を参照してください。
 
-- `doc/spec/it-asset-management-demo-plan.md`
+- `doc/spec/it-asset-management-demo.md`
 
 ## 現在の位置づけ
 
@@ -37,5 +37,5 @@ docker-composeファイルのサービス名は、tdev-demo03-を接頭辞とし
 
 ## ドキュメント案内
 
-- 企画・実装方針: `doc/spec/it-asset-management-demo-plan.md`
+- 企画・実装方針: `doc/spec/it-asset-management-demo.md`
 - 認証メモ: `doc/spec-auth/prompt.md`

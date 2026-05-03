@@ -5,7 +5,7 @@
 
 ## 1. 基本原則
 
-1. `doc\spec\it-asset-management-demo-plan.md` を読まずに実装を始めない
+1. `doc\spec\it-asset-management-demo.md` を読まずに実装を始めない
 2. 不明点は既存文書の範囲で判断し、勝手にスコープを広げない
 3. 既存方針に反する独自設計を持ち込まない
 4. 依頼対象に直接関係しない箇所を勝手に変更しない
@@ -47,7 +47,7 @@
 ## 6. ドキュメントルール
 
 1. 仕様や前提を変える実装では、関連ドキュメントも更新する
-2. 実装判断の正本は `README.md` ではなく `doc\spec\it-asset-management-demo-plan.md`
+2. 実装判断の正本は `README.md` ではなく `doc\spec\it-asset-management-demo.md`
 3. 認証関連の前提確認には `doc\spec-auth\prompt.md` を参照する
 4. 恒久価値のない一時メモを増やしすぎない
 

@@ -4,7 +4,7 @@
 
 この文書は、`demo03_am` で Copilot CLI を使って実装や文書更新を進めるときに、**毎回の指示を短くしつつ、Python / Django 前提を維持する運用方法**を整理したものです。
 
-このプロジェクトの正本は `doc\spec\it-asset-management-demo-plan.md` であり、この文書はその正本を効率よく参照させるための運用ガイドです。
+このプロジェクトの正本は `doc\spec\it-asset-management-demo.md` であり、この文書はその正本を効率よく参照させるための運用ガイドです。
 
 ## 2. 結論
 
@@ -110,7 +110,7 @@ Layer 2: 詳細ルール
 
 Layer 3: 実装・設計の正本
   README.md
-  doc/spec/it-asset-management-demo-plan.md
+  doc/spec/it-asset-management-demo.md
   doc/spec-auth/prompt.md
 
 Layer 4: 毎回の差分指示
@@ -129,7 +129,7 @@ Layer 5: 補助能力
 1. `01-mandatory-rules.md`
 2. `02-reference-order.md`
 3. `README.md`
-4. `doc\spec\it-asset-management-demo-plan.md`
+4. `doc\spec\it-asset-management-demo.md`
 5. 認証タスクなら `doc\spec-auth\prompt.md`
 
 ### 7.2 通常の依頼
@@ -187,6 +187,6 @@ doc/tips/copilot のルールに従って、
 
 1. `.github` の instruction には短い恒久ルールだけを書く
 2. 詳細説明は `doc\tips\copilot` に寄せる
-3. 設計判断は `doc\spec\it-asset-management-demo-plan.md` を正本にする
+3. 設計判断は `doc\spec\it-asset-management-demo.md` を正本にする
 4. 認証は `doc\spec-auth\prompt.md` を参照して判断する
 5. 大きい作業だけ `/plan` と `/review` を併用する

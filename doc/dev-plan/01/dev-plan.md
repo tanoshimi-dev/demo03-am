@@ -202,7 +202,7 @@
 
 ## 7. フェーズ進行中の注意
 
-1. 仕様の正本は `doc\spec\it-asset-management-demo-plan.md`
+1. 仕様の正本は `doc\spec\it-asset-management-demo.md`
 2. 認証変更時は `doc\spec-auth\prompt.md` を必ず再確認する
 3. テンプレート側に認証判断や業務判定を持ち込まない
 4. ドキュメント更新が必要な変更は、実装と同時に反映する
