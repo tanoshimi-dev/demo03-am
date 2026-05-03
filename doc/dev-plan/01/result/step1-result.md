@@ -7,6 +7,7 @@
 - ルート `/` で起動確認できる最小テンプレート `sys\app\templates\home.html` を追加
 - `sys\infra\docker\web\Dockerfile` と `sys\infra\compose\docker-compose.yml` を追加し、`tdev-demo03-` 接頭辞の `web` / `db` / `adminer` サービスを構成
 - `sys\.env.example`、`sys\requirements.txt`、`README.md`、`doc\dev-plan\01\dev-plan.md` を更新し、ローカル起動手順と Step 1 完了状態を反映
+- 追加の単体テストとして `sys\app\accounts\tests\test_foundation.py` を追加し、環境変数 helper とトップページ応答を確認できるようにした
 
 ## 変更ファイル
 
@@ -24,6 +25,7 @@
 - `sys\app\static\.gitkeep`
 - `sys\infra\docker\web\Dockerfile`
 - `sys\infra\compose\docker-compose.yml`
+- `sys\app\accounts\tests\test_foundation.py`
 - `README.md`
 - `doc\dev-plan\01\dev-plan.md`
 
@@ -33,7 +35,8 @@
 2. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml up -d --build`
 3. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml ps`
 4. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml exec -T tdev-demo03-web python manage.py check`
-5. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml down`
+5. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml run --rm --entrypoint python tdev-demo03-web manage.py test`
+6. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml down`
 
 補足:
 
@@ -47,6 +50,7 @@
 - `http://localhost:18003/` でトップページの HTML 応答を確認
 - `tdev-demo03-adminer` を追加し、DB ビューアを `http://localhost:18081/` で開ける構成にした
 - `python manage.py check` は `System check identified no issues (0 silenced).` を返却
+- `manage.py test` で Step 1〜3 分を含む 17 件の単体テストが成功した
 
 ## 残課題 / フォローアップ
 

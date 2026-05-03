@@ -2,7 +2,7 @@
 
 `demo03_am` は、tanoshimi.dev 向けの **IT資産・端末管理デモ** を整理・実装していくための作業ディレクトリです。
 
-現時点では `Step 2` まで進み、Django / PostgreSQL / Docker Compose の土台に加えて、ポータル認証引継ぎを受けるための `accounts` 基盤まで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
+現時点では `Step 3` まで進み、Django / PostgreSQL / Docker Compose の土台、ポータル認証引継ぎを受けるための `accounts` 基盤、資産台帳の `assets` 基盤まで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
 
 ## 概要
 
@@ -20,7 +20,7 @@
 
 ## 現在の位置づけ
 
-このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 1 として、Django プロジェクト本体、PostgreSQL 接続設定、Docker Compose によるローカル起動基盤まで整備しています。
+このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 3 まで進み、Django プロジェクト本体、認証受け皿、資産台帳の中核モデルと Admin 基盤まで整備しています。
 
 ## ローカル開発の前提
 
@@ -47,6 +47,18 @@ docker-composeファイルのサービス名は、tdev-demo03-を接頭辞とし
 - `portal_token` はフロントエンド JavaScript で扱わず、サーバー側で認証状態を受ける
 - ローカル開発では `AUTH_MODE=dev-header` により、`X-Portal-*` ヘッダーを使って handover を確認できる
 
+## 資産台帳基盤の現状
+
+- `assets` アプリで `AssetCategory` と `Asset` を管理する
+- 資産状態は `in_stock` / `on_loan` / `in_repair` / `lost` / `retired` で表現する
+- シリアル番号と資産コードは一意制約で管理する
+- Django Admin からカテゴリと資産台帳を登録・更新できる
+
+## 台帳初期データ方針
+
+- 初期データは後続ステップで Django fixture または管理コマンドから投入する
+- Step 3 時点ではモデルと Admin を先に確定し、データ投入は実演シナリオに合わせて追加する
+
 ## 現在のディレクトリ構成
 
 ```text
@@ -57,6 +69,8 @@ demo03_am/
     .env.example
     requirements.txt
     app/
+      accounts/
+      assets/
       manage.py
       config/
       templates/
