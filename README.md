@@ -2,7 +2,7 @@
 
 `demo03_am` は、tanoshimi.dev 向けの **IT資産・端末管理デモ** を整理・実装していくための作業ディレクトリです。
 
-現時点では `Step 1` として Django / PostgreSQL / Docker Compose の最小土台まで実装済みで、主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
+現時点では `Step 2` まで進み、Django / PostgreSQL / Docker Compose の土台に加えて、ポータル認証引継ぎを受けるための `accounts` 基盤まで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
 
 ## 概要
 
@@ -39,6 +39,13 @@ docker-composeファイルのサービス名は、tdev-demo03-を接頭辞とし
 2. `docker compose --env-file sys\.env -f sys\infra\compose\docker-compose.yml up --build` を実行する
 3. ブラウザで `http://localhost:18003` を開く
 4. DB ビューアは `http://localhost:18081` で開く
+
+## 認証基盤の現状
+
+- `accounts` アプリでポータル連携済み利用者、ロール、ローカルセッション補助を管理する
+- アプリ単独のログイン画面は作らず、バックエンドの `/auth/handover` が認証引継ぎ入口になる
+- `portal_token` はフロントエンド JavaScript で扱わず、サーバー側で認証状態を受ける
+- ローカル開発では `AUTH_MODE=dev-header` により、`X-Portal-*` ヘッダーを使って handover を確認できる
 
 ## 現在のディレクトリ構成
 

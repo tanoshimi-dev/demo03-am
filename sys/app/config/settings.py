@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -24,6 +25,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.middleware.PortalSessionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -74,5 +76,19 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+SESSION_COOKIE_NAME = get_text("SESSION_COOKIE_NAME", "demo03_am_session")
+LOGIN_URL = "/auth/handover"
+
+AUTH_MODE = get_text("AUTH_MODE", "dev-header")
+PORTAL_COOKIE_NAME = get_text("PORTAL_COOKIE_NAME", "portal_token")
+PORTAL_COOKIE_NAMES = get_list("PORTAL_COOKIE_NAMES", [PORTAL_COOKIE_NAME])
+PORTAL_ISSUER = get_text("PORTAL_ISSUER", "")
+PORTAL_JWKS_URL = get_text("PORTAL_JWKS_URL", "")
+PORTAL_LOGIN_URL = get_text("PORTAL_LOGIN_URL", "")
+PORTAL_ALLOWED_RETURN_TO_HOSTS = get_list(
+    "PORTAL_ALLOWED_RETURN_TO_HOSTS",
+    ["localhost:18003", "127.0.0.1:18003"],
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

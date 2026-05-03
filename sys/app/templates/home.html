@@ -7,12 +7,39 @@
 <body>
     <main>
         <h1>demo03_am</h1>
-        <p>IT資産・端末管理デモの Django プロジェクト基盤が起動しています。</p>
+        <p>IT資産・端末管理デモの Django 認証受け皿が起動しています。</p>
         <ul>
             <li>管理画面: <a href="/admin/">/admin/</a></li>
             <li>DB: PostgreSQL</li>
             <li>ローカル起動: Docker Compose</li>
+            <li>認証状態確認: <a href="/auth/me">/auth/me</a></li>
+            <li>認証引継ぎ: <a href="/auth/handover?returnTo=/">/auth/handover?returnTo=/</a></li>
+            <li>ログアウト: <a href="/auth/logout?returnTo=/">/auth/logout?returnTo=/</a></li>
         </ul>
+
+        {% if request.user.is_authenticated %}
+        <section>
+            <h2>現在のセッション</h2>
+            <p>ログイン済み: {{ request.account.display_name|default:request.user.get_full_name|default:request.user.get_username }}</p>
+            <p>メール: {{ request.account.email|default:request.user.email }}</p>
+            {% if request.account %}
+            <p>Portal subject: {{ request.account.portal_subject }}</p>
+            <p>Roles:
+                {% for role in request.account.roles.all %}
+                    {{ role.code }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    なし
+                {% endfor %}
+            </p>
+            {% endif %}
+        </section>
+        {% else %}
+        <section>
+            <h2>未認証時の扱い</h2>
+            <p>アプリ単独のログイン画面は持たず、バックエンドの handover エンドポイントでポータル由来の認証情報を受け取ります。</p>
+            <p>ローカル開発では `AUTH_MODE=dev-header` のまま、バックエンドへ `X-Portal-*` ヘッダーを付けて handover を呼び出します。</p>
+        </section>
+        {% endif %}
     </main>
 </body>
 </html>

@@ -34,7 +34,7 @@
 | Phase | Status | 目的 | 備考 |
 | --- | --- | --- | --- |
 | Step 1. プロジェクト基盤を作る | Done | Django / PostgreSQL / Docker Compose の最小土台を整える | `config`、DB接続、Compose 初期化 |
-| Step 2. アカウントと認証の受け皿を作る | Not Started | ポータル認証引継ぎを受ける Django 側基盤を用意する | アプリ単独ログインは作らない |
+| Step 2. アカウントと認証の受け皿を作る | Done | ポータル認証引継ぎを受ける Django 側基盤を用意する | アプリ単独ログインは作らない |
 | Step 3. 資産台帳の基盤を作る | Not Started | 資産カテゴリと資産台帳の中核モデルを整える | Admin で基本運用可能にする |
 | Step 4. 資産一覧と詳細画面を作る | Not Started | 利用者向け・管理者向けの参照導線を整える | Django Templates を基本にする |
 | Step 5. 貸出申請フローを作る | Not Started | 貸出申請の基本導線を成立させる | 申請可否はサーバー側判定 |
