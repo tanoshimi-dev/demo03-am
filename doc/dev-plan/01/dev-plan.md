@@ -27,7 +27,24 @@
 5. 主要な状態変更が監査ログに残る
 6. デモ用データで一連のシナリオを再現できる
 
-## 4. Step by Step
+## 4. Phase Status
+
+各 phase の進行状況を、この表で管理します。
+
+| Phase | Status | 目的 | 備考 |
+| --- | --- | --- | --- |
+| Step 1. プロジェクト基盤を作る | Not Started | Django / PostgreSQL / Docker Compose の最小土台を整える | `config`、DB接続、Compose 初期化 |
+| Step 2. アカウントと認証の受け皿を作る | Not Started | ポータル認証引継ぎを受ける Django 側基盤を用意する | アプリ単独ログインは作らない |
+| Step 3. 資産台帳の基盤を作る | Not Started | 資産カテゴリと資産台帳の中核モデルを整える | Admin で基本運用可能にする |
+| Step 4. 資産一覧と詳細画面を作る | Not Started | 利用者向け・管理者向けの参照導線を整える | Django Templates を基本にする |
+| Step 5. 貸出申請フローを作る | Not Started | 貸出申請の基本導線を成立させる | 申請可否はサーバー側判定 |
+| Step 6. 承認と返却を作る | Not Started | 状態遷移を最後まで通せるようにする | 承認、返却、在庫戻し |
+| Step 7. インシデントと棚卸しを追加する | Not Started | 故障、紛失、廃棄、棚卸しを扱えるようにする | 例外系デモの土台 |
+| Step 8. 監査ログとデモ仕上げを行う | Not Started | 監査性とデモ完成度を高める | シード、UI調整、実演手順 |
+
+`Status` は当面、`Not Started` / `In Progress` / `Done` / `Blocked` のいずれかで更新します。
+
+## 5. Step by Step
 
 ### Step 1. プロジェクト基盤を作る
 
@@ -169,7 +186,7 @@
 - デモ用データで正常系と例外系を再現できる
 - 実演しやすい最小品質に達している
 
-## 5. 推奨PR分割
+## 6. 推奨PR分割
 
 1. Django プロジェクト初期化
 2. PostgreSQL 接続と Docker Compose
@@ -183,7 +200,7 @@
 10. 監査ログとシードデータ
 11. README とデモ手順
 
-## 6. フェーズ進行中の注意
+## 7. フェーズ進行中の注意
 
 1. 仕様の正本は `doc\spec\it-asset-management-demo-plan.md`
 2. 認証変更時は `doc\spec-auth\prompt.md` を必ず再確認する
