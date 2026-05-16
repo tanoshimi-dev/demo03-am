@@ -23,3 +23,6 @@
 
 - Keep changes scoped to the requested step.
 - Update related docs when implementation changes behavior or assumptions.
+
+- Do not implement without my instruction. Always wait for my prompt before starting implementation, and clarify the scope if the prompt is ambiguous.
+- Do not git add, commit, or push without my instruction. Always wait for my prompt before performing any git operations, and clarify the scope if the prompt is ambiguous.
