@@ -55,6 +55,17 @@ class InventoryViewTests(TestCase):
         self.assertRedirects(response, f"/inventory/{session.pk}/")
         self.assertEqual(session.status, InventorySession.STATUS_OPEN)
 
+    def test_admin_can_view_session_list(self):
+        account = self.create_logged_in_account(role_codes=["asset-admin"])
+        InventorySession.objects.create(name="2026Q1 棚卸し", created_by=account.user)
+        InventorySession.objects.create(name="2026Q2 棚卸し", created_by=account.user)
+
+        response = self.client.get("/inventory/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "2026Q1 棚卸し")
+        self.assertContains(response, "2026Q2 棚卸し")
+
     def test_admin_can_view_session_detail(self):
         account = self.create_logged_in_account(role_codes=["sysadmin"])
         session = InventorySession.objects.create(name="2026Q2", created_by=account.user)

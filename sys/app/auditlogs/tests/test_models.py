@@ -33,3 +33,15 @@ class AuditLogServiceTests(TestCase):
 
         self.assertEqual(log.extra["status"], "missing")
         self.assertEqual(log.extra["session"], "2026Q2")
+
+    def test_audit_log_str_representation(self):
+        log = log_action(
+            action=AuditLog.ACTION_LOAN_APPROVED,
+            actor=self.user,
+            asset_code="ASSET-001",
+        )
+
+        result = str(log)
+
+        self.assertIn("貸出承認", result)
+        self.assertIn("ASSET-001", result)

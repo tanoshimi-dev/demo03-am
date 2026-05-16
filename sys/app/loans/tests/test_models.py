@@ -256,6 +256,13 @@ class ReturnServiceTests(TestCase):
         self.assertEqual(return_record.condition_notes, "問題なし")
         self.assertIs(self.loan_record.is_on_loan, False)
 
+    def test_confirm_return_with_no_return_requested_still_works(self):
+        return_record = confirm_return(loan_record=self.loan_record, receiver=self.approver)
+
+        self.asset.refresh_from_db()
+        self.assertIsInstance(return_record, ReturnRecord)
+        self.assertEqual(self.asset.status, Asset.STATUS_IN_STOCK)
+
     def test_confirm_return_raises_if_already_returned(self):
         confirm_return(loan_record=self.loan_record, receiver=self.approver)
 

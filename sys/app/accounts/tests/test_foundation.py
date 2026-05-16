@@ -30,3 +30,13 @@ class ProjectFoundationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "demo03_am")
         self.assertContains(response, "/auth/me")
+
+    def test_home_page_shows_key_links(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "/assets/")
+        self.assertContains(response, "/loans/mine/")
+        self.assertContains(response, "/incidents/")
+        self.assertContains(response, "/inventory/")
+        self.assertContains(response, "/auditlogs/")

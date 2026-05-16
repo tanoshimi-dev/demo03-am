@@ -99,3 +99,12 @@ class AssetViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "管理者向け表示")
         self.assertContains(response, "カテゴリ、状態、保管場所の更新は Django Admin から行えます。")
+
+    def test_asset_detail_shows_incident_report_link_for_admin(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
+
+        response = self.client.get(f"/assets/{self.asset_one.asset_code}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "インシデント報告")
+        self.assertContains(response, f"/incidents/report/{self.asset_one.asset_code}/")

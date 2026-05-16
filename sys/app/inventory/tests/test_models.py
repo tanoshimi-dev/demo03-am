@@ -100,6 +100,14 @@ class InventoryServiceTests(TestCase):
 
         self.assertIn("完了済み", str(ctx.exception))
 
+    def test_close_already_closed_session_raises_error(self):
+        user = User.objects.create_user(username="closer2", password="p")
+        session = InventorySession.objects.create(name="Q1 closed", created_by=user)
+        close_inventory_session(session, closed_by=user)
+
+        with self.assertRaises(InventoryError):
+            close_inventory_session(session, closed_by=user)
+
     def test_get_discrepancies_returns_missing_in_stock_assets(self):
         in_stock_asset = self.create_asset("ASSET-MISSING")
         on_loan_asset = self.create_asset("ASSET-ONLOAN", status=Asset.STATUS_ON_LOAN)

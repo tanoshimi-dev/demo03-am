@@ -179,6 +179,20 @@ class MyLoanListViewTests(LoanViewTestBase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "貸出申請はありません")
 
+    def test_my_loan_list_shows_pending_status_label(self):
+        account = self.create_logged_in_account()
+        LoanRequest.objects.create(
+            asset=self.asset_in_stock,
+            requester=account.user,
+            status=LoanRequest.STATUS_PENDING,
+            expected_start_date=datetime.date.today(),
+        )
+
+        response = self.client.get("/loans/mine/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "審査中")
+
     def test_shows_return_request_button_for_approved_loan(self):
         account = self.create_logged_in_account()
         approver = User.objects.create_user(username="approver", password="p")

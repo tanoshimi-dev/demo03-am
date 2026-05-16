@@ -83,6 +83,27 @@ class IncidentServiceTests(TestCase):
         self.assertEqual(report.resolved_by, self.resolver)
         self.assertEqual(asset.status, Asset.STATUS_IN_STOCK)
 
+    def test_report_breakdown_on_on_loan_asset_succeeds(self):
+        asset = Asset.objects.create(
+            asset_code="ASSET-BK",
+            name="On Loan Asset",
+            category=self.category,
+            serial_number="SN-BK",
+            status=Asset.STATUS_ON_LOAN,
+        )
+        user = User.objects.create_user(username="bk_reporter", password="p")
+
+        report = report_incident(
+            asset=asset,
+            incident_type=IncidentReport.TYPE_BREAKDOWN,
+            reporter=user,
+            description="on_loan asset broken",
+        )
+
+        asset.refresh_from_db()
+        self.assertEqual(asset.status, Asset.STATUS_IN_REPAIR)
+        self.assertEqual(report.incident_type, IncidentReport.TYPE_BREAKDOWN)
+
     def test_resolve_non_breakdown_raises_error(self):
         asset = self.create_asset("ASSET-LOST")
         report = report_incident(

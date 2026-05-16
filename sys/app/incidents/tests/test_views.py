@@ -74,6 +74,41 @@ class IncidentViewTests(TestCase):
         self.assertContains(response, "ASSET-001")
         self.assertContains(response, "紛失")
 
+    def test_admin_can_filter_incident_list_by_type(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
+        breakdown_asset = Asset.objects.create(
+            asset_code="ASSET-002",
+            name="MacBook Pro",
+            category=self.category,
+            serial_number="SN-0002",
+        )
+        report_incident(asset=self.asset, incident_type=IncidentReport.TYPE_LOST, reporter=self.reporter)
+        report_incident(
+            asset=breakdown_asset,
+            incident_type=IncidentReport.TYPE_BREAKDOWN,
+            reporter=self.reporter,
+        )
+
+        response = self.client.get("/incidents/", {"incident_type": IncidentReport.TYPE_BREAKDOWN})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "MacBook Pro")
+        self.assertNotContains(response, "ASSET-001")
+
+    def test_admin_resolve_get_renders_form(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
+        report = report_incident(
+            asset=self.asset,
+            incident_type=IncidentReport.TYPE_BREAKDOWN,
+            reporter=self.reporter,
+            description="故障中",
+        )
+
+        response = self.client.get(f"/incidents/{report.pk}/resolve/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "故障インシデント解決")
+
     def test_admin_can_resolve_breakdown_incident(self):
         self.create_logged_in_account(role_codes=["asset-admin"])
         report = report_incident(
