@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.contrib.auth import login, logout
-from django.http import JsonResponse
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_http_methods
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from .models import Account
+from .models import Account, AccountSession
 from .services import (
     account_payload,
     build_portal_login_url,
@@ -84,6 +84,34 @@ def handover_view(request):
     login(request, account.user, backend="django.contrib.auth.backends.ModelBackend")
     end_account_session(previous_session_key)
     sync_account_session(request, account, identity.source)
+    request.account = account
+    return redirect(return_to)
+
+
+@require_POST
+def demo_switch_view(request):
+    if settings.AUTH_MODE != "dev-header":
+        return HttpResponseForbidden("Demo switch is only available in dev-header mode.")
+
+    portal_subject = request.POST.get("portal_subject", "").strip()
+    allowed = getattr(settings, "DEMO_SWITCH_SUBJECTS", [])
+    if portal_subject not in allowed:
+        return HttpResponseBadRequest("Invalid portal_subject.")
+
+    try:
+        account = Account.objects.select_related("user").get(portal_subject=portal_subject)
+    except Account.DoesNotExist:
+        return HttpResponseBadRequest(
+            f"Account not found for portal_subject={portal_subject!r}. "
+            "Run 'python manage.py load_demo_seed' first."
+        )
+
+    return_to = sanitize_return_to(request, request.POST.get("returnTo"), _default_return_to())
+    previous_session_key = request.session.session_key
+    logout(request)
+    end_account_session(previous_session_key)
+    login(request, account.user, backend="django.contrib.auth.backends.ModelBackend")
+    sync_account_session(request, account, AccountSession.SOURCE_DEV_HEADER)
     request.account = account
     return redirect(return_to)
 

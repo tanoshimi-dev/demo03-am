@@ -32,6 +32,20 @@ class ProjectFoundationTests(TestCase):
         self.assertContains(response, "/auth/me")
 
     def test_home_page_shows_key_links(self):
+        from accounts.models import Account, AppRole
+        from django.contrib.auth.models import User
+
+        admin_user = User.objects.create_user(username="testadmin_home", password="pass")
+        admin_role, _ = AppRole.objects.get_or_create(code="asset-admin", defaults={"name": "Asset Admin"})
+        account = Account.objects.create(
+            user=admin_user,
+            portal_subject="test-admin-home",
+            display_name="Test Admin",
+            email="testadmin@example.com",
+        )
+        account.roles.add(admin_role)
+        self.client.force_login(admin_user)
+
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)

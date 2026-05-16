@@ -12,18 +12,16 @@
 <section class="card">
     <h2>主要リンク</h2>
     <ul class="link-list">
-        <li>管理画面: <a href="/admin/">/admin/</a></li>
-        <li>DB: PostgreSQL</li>
-        <li>ローカル起動: Docker Compose</li>
         <li>認証状態確認: <a href="/auth/me">/auth/me</a></li>
-        <li>認証引継ぎ: <a href="/auth/handover?returnTo=/">/auth/handover?returnTo=/</a></li>
-        <li>ログアウト: <a href="/auth/logout?returnTo=/">/auth/logout?returnTo=/</a></li>
         <li>資産一覧: <a href="/assets/">/assets/</a></li>
         <li>自分の貸出申請: <a href="/loans/mine/">/loans/mine/</a></li>
+        {% if can_manage %}
         <li>貸出申請一覧（管理者）: <a href="/loans/admin/">/loans/admin/</a></li>
-        <li>インシデント一覧（管理者）: <a href="/incidents/">/incidents/</a></li>
-        <li>棚卸しセッション（管理者）: <a href="/inventory/">/inventory/</a></li>
-        <li>監査ログ（管理者）: <a href="/auditlogs/">/auditlogs/</a></li>
+        <li>インシデント一覧: <a href="/incidents/">/incidents/</a></li>
+        <li>棚卸しセッション: <a href="/inventory/">/inventory/</a></li>
+        <li>監査ログ: <a href="/auditlogs/">/auditlogs/</a></li>
+        <li>管理画面: <a href="/admin/">/admin/</a></li>
+        {% endif %}
     </ul>
 </section>
 

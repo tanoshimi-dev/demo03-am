@@ -36,8 +36,9 @@
                     <th>資産コード</th>
                     <th>資産名</th>
                     <th>申請者</th>
+                    <th>利用目的</th>
                     <th>状態</th>
-                    <th>利用開始予定日</th>
+                    <th>利用開始日</th>
                     <th>返却予定日</th>
                     <th>申請日</th>
                     <th>操作</th>
@@ -50,9 +51,32 @@
                     <td><a href="{% url 'assets:detail' req.asset.asset_code %}">{{ req.asset.asset_code }}</a></td>
                     <td>{{ req.asset.name }}</td>
                     <td>{{ req.requester.username }}</td>
-                    <td>{{ req.get_status_display }}</td>
-                    <td>{{ req.expected_start_date|date:"Y-m-d" }}</td>
-                    <td>{{ req.expected_return_date|date:"Y-m-d"|default:"-" }}</td>
+                    <td class="text-muted">{{ req.purpose|default:"-" }}</td>
+                    <td>
+                        {% if req.status == "pending" %}
+                        <span class="status-badge status-pending">審査中</span>
+                        {% elif req.status == "approved" %}
+                        <span class="status-badge status-approved">承認済み</span>
+                        {% elif req.status == "rejected" %}
+                        <span class="status-badge status-rejected">却下</span>
+                        {% else %}
+                        <span class="status-badge">{{ req.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.status == "approved" and req.loan_record %}
+                            {{ req.loan_record.loan_start_date|date:"Y-m-d" }}
+                        {% else %}
+                            {{ req.expected_start_date|date:"Y-m-d" }}<span class="text-muted">（予定）</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.status == "approved" and req.loan_record and req.loan_record.expected_return_date %}
+                            {{ req.loan_record.expected_return_date|date:"Y-m-d" }}
+                        {% else %}
+                            {{ req.expected_return_date|date:"Y-m-d"|default:"-" }}
+                        {% endif %}
+                    </td>
                     <td>{{ req.created_at|date:"Y-m-d" }}</td>
                     <td>
                         {% if req.status == "pending" %}
@@ -71,7 +95,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="empty-row">申請はありません。</td>
+                    <td colspan="10" class="empty-row">申請はありません。</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -89,9 +113,10 @@
                     <th>資産コード</th>
                     <th>資産名</th>
                     <th>利用者</th>
+                    <th>利用目的</th>
                     <th>貸出開始日</th>
                     <th>返却予定日</th>
-                    <th>返却申請</th>
+                    <th>返却申請日</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -102,16 +127,23 @@
                     <td><a href="{% url 'assets:detail' record.loan_request.asset.asset_code %}">{{ record.loan_request.asset.asset_code }}</a></td>
                     <td>{{ record.loan_request.asset.name }}</td>
                     <td>{{ record.loan_request.requester.username }}</td>
+                    <td class="text-muted">{{ record.loan_request.purpose|default:"-" }}</td>
                     <td>{{ record.loan_start_date|date:"Y-m-d" }}</td>
                     <td>{{ record.expected_return_date|date:"Y-m-d"|default:"-" }}</td>
-                    <td>{% if record.return_requested_at %}{{ record.return_requested_at|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+                    <td>
+                        {% if record.return_requested_at %}
+                        <span class="status-badge status-pending">{{ record.return_requested_at|date:"Y-m-d" }}</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
                     <td>
                         <a class="button button-small" href="{% url 'loans:return_confirm' record.pk %}">返却確認</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="empty-row">貸出中の資産はありません。</td>
+                    <td colspan="9" class="empty-row">貸出中の資産はありません。</td>
                 </tr>
                 {% endfor %}
             </tbody>

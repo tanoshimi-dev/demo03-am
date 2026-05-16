@@ -309,6 +309,70 @@ a:hover {
     padding-left: 20px;
 }
 
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    background: #e9ecef;
+    color: #495057;
+}
+.status-pending  { background: #fff3cd; color: #856404; }
+.status-approved { background: #d1e7dd; color: #0a3622; }
+.status-rejected { background: #f8d7da; color: #58151c; }
+
+.text-muted { color: var(--muted); font-size: 0.9em; }
+
+/* Demo Switcher */
+.demo-switcher {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
+    justify-self: end;
+    padding: 0.25rem 0.75rem;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.demo-switcher-label {
+    color: #856404;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.demo-switcher-form {
+    display: inline;
+    margin: 0;
+}
+
+.demo-switcher-btn {
+    padding: 0.2rem 0.6rem;
+    border: 1px solid #6c757d;
+    border-radius: 3px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #333;
+}
+
+.demo-switcher-btn:hover:not(:disabled) {
+    background: #e9ecef;
+}
+
+.demo-switcher-btn--active {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+    cursor: default;
+}
+
 @media (max-width: 720px) {
     .page-shell {
         padding: 16px;
@@ -324,5 +388,11 @@ a:hover {
 
     .detail-list {
         grid-template-columns: 1fr;
+    }
+
+    .demo-switcher {
+        width: 100%;
+        justify-self: stretch;
+        margin-left: 0;
     }
 }

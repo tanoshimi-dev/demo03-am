@@ -47,6 +47,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "accounts.context_processors.demo_context",
             ],
         },
     },
@@ -86,6 +87,10 @@ SESSION_COOKIE_NAME = get_text("SESSION_COOKIE_NAME", "demo03_am_session")
 LOGIN_URL = "/auth/handover"
 
 AUTH_MODE = get_text("AUTH_MODE", "dev-header")
+DEMO_SWITCH_SUBJECTS = get_list(
+    "DEMO_SWITCH_SUBJECTS",
+    ["portal-demo-employee", "portal-demo-admin"],
+)
 PORTAL_COOKIE_NAME = get_text("PORTAL_COOKIE_NAME", "portal_token")
 PORTAL_COOKIE_NAMES = get_list("PORTAL_COOKIE_NAMES", [PORTAL_COOKIE_NAME])
 PORTAL_ISSUER = get_text("PORTAL_ISSUER", "")
