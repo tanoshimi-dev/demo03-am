@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}故障インシデント解決{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Incident Resolve</p>
+        <h1>故障インシデント解決</h1>
+    </div>
+    <a class="button button-secondary" href="{% url 'incidents:list' %}">インシデント一覧へ戻る</a>
+</div>
+
+<section class="card">
+    <dl class="detail-list">
+        <dt>資産コード</dt>
+        <dd>{{ incident_report.asset.asset_code }}</dd>
+        <dt>資産名</dt>
+        <dd>{{ incident_report.asset.name }}</dd>
+        <dt>種別</dt>
+        <dd>{{ incident_report.get_incident_type_display }}</dd>
+        <dt>報告者</dt>
+        <dd>{{ incident_report.reported_by.username }}</dd>
+        <dt>報告日時</dt>
+        <dd>{{ incident_report.reported_at|date:"Y-m-d H:i" }}</dd>
+        <dt>内容</dt>
+        <dd>{{ incident_report.description|linebreaksbr|default:"-" }}</dd>
+    </dl>
+</section>
+
+<section class="card">
+    <h2>解決内容</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="form-errors">
+            {% for error in form.non_field_errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% for field in form %}
+        <div class="form-field{% if field.errors %} has-error{% endif %}">
+            {{ field.label_tag }}
+            {{ field }}
+            {% for error in field.errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="button">解決して在庫へ戻す</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

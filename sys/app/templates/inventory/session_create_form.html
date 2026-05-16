@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}棚卸しセッション作成{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Inventory</p>
+        <h1>棚卸しセッション作成</h1>
+    </div>
+    <a class="button button-secondary" href="{% url 'inventory:session_list' %}">一覧へ戻る</a>
+</div>
+
+<section class="card">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="form-errors">
+            {% for error in form.non_field_errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% for field in form %}
+        <div class="form-field{% if field.errors %} has-error{% endif %}">
+            {{ field.label_tag }}
+            {{ field }}
+            {% for error in field.errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="button">開始する</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

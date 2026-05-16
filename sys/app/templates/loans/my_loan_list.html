@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}自分の貸出申請{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">My Loans</p>
+        <h1>自分の貸出申請</h1>
+    </div>
+    <a class="button button-secondary" href="/">ホームへ戻る</a>
+</div>
+
+<section class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>申請番号</th>
+                    <th>資産コード</th>
+                    <th>資産名</th>
+                    <th>状態</th>
+                    <th>利用開始予定日</th>
+                    <th>返却予定日</th>
+                    <th>申請日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in loan_requests %}
+                <tr>
+                    <td>{{ req.pk }}</td>
+                    <td><a href="{% url 'assets:detail' req.asset.asset_code %}">{{ req.asset.asset_code }}</a></td>
+                    <td>{{ req.asset.name }}</td>
+                    <td>{{ req.get_status_display }}</td>
+                    <td>{{ req.expected_start_date|date:"Y-m-d" }}</td>
+                    <td>{{ req.expected_return_date|date:"Y-m-d"|default:"-" }}</td>
+                    <td>{{ req.created_at|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if req.status == "approved" and req.loan_record %}
+                            {% if req.loan_record.return_requested_at %}
+                            <span>返却申請済み</span>
+                            {% else %}
+                            <form method="post" action="{% url 'loans:return_request' req.loan_record.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="button button-small">返却申請</button>
+                            </form>
+                            {% endif %}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="empty-row">貸出申請はありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,6 +1,6 @@
 # Auth Instructions
 
-- Before changing auth-related code or docs, read `doc/spec-auth/README.md` and `doc/dev-plan/phase2-auth-and-common.md`.
+- Before changing auth-related code or docs, read `doc/spec-auth/prompt.md` and the relevant `doc/dev-plan/*` file for the requested step.
 - Preserve the portal handover authentication model used by `demo01_crm`.
 - Keep portal authentication as the entry point and app-local session as the app protection mechanism.
 - Do not add an app-specific login page.

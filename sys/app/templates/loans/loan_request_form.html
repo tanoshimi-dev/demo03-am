@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}貸出申請 — {{ asset.name }}{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Loan Request</p>
+        <h1>貸出申請</h1>
+    </div>
+    <a class="button button-secondary" href="{% url 'assets:detail' asset.asset_code %}">資産詳細へ戻る</a>
+</div>
+
+<section class="card">
+    <dl class="detail-list">
+        <dt>資産コード</dt>
+        <dd>{{ asset.asset_code }}</dd>
+        <dt>名称</dt>
+        <dd>{{ asset.name }}</dd>
+        <dt>カテゴリ</dt>
+        <dd>{{ asset.category.name }}</dd>
+        <dt>状態</dt>
+        <dd>{{ asset.get_status_display }}</dd>
+    </dl>
+</section>
+
+{% if not asset.is_available_for_loan %}
+<section class="card notice-card">
+    <p>この資産は現在貸出できません（状態: {{ asset.get_status_display }}）。</p>
+</section>
+{% else %}
+<section class="card">
+    <h2>申請内容</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="form-errors">
+            {% for error in form.non_field_errors %}
+            <p class="error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% for field in form %}
+        <div class="form-field{% if field.errors %} has-error{% endif %}">
+            {{ field.label_tag }}
+            {{ field }}
+            {% for error in field.errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="button">申請する</button>
+        </div>
+    </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}demo03_am{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'styles/app.css' %}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="site-header">
+            <a class="site-title" href="{% url 'home' %}">demo03_am</a>
+            <nav class="site-nav" aria-label="Primary">
+                <ul class="site-nav-list">
+                    <li><a class="site-nav-link" href="{% url 'home' %}">ホーム</a></li>
+                    <li><a class="site-nav-link" href="{% url 'assets:list' %}">資産一覧</a></li>
+                    <li><a class="site-nav-link" href="{% url 'loans:my_list' %}">貸出申請一覧</a></li>
+                    <li><a class="site-nav-link" href="{% url 'loans:admin_list' %}">管理者向け</a></li>
+                    <li><a class="site-nav-link" href="{% url 'auditlogs:list' %}">監査ログ</a></li>
+                </ul>
+            </nav>
+        </header>
+        <main class="page-content">
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="message message-{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>
