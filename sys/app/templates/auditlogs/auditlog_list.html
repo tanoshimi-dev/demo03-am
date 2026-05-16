@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}監査ログ{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Audit Logs</p>
+        <h1>監査ログ</h1>
+    </div>
+    <a class="button button-secondary" href="/">ホームへ戻る</a>
+</div>
+
+<section class="card">
+    <form method="get" class="filter-form">
+        <label>
+            <span>操作種別</span>
+            <select name="action">
+                <option value="">すべて</option>
+                {% for value, label in action_choices %}
+                <option value="{{ value }}"{% if selected_action == value %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>資産コード</span>
+            <input type="text" name="asset_code" value="{{ asset_code_query }}" placeholder="資産コードで検索">
+        </label>
+        <button type="submit" class="button">絞り込む</button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>日時</th>
+                    <th>操作</th>
+                    <th>資産コード</th>
+                    <th>対象</th>
+                    <th>実行者</th>
+                    <th>補足</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.pk }}</td>
+                    <td>{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ log.get_action_display }}</td>
+                    <td>{{ log.asset_code|default:"-" }}</td>
+                    <td>{{ log.object_repr|default:"-" }}</td>
+                    <td>{% if log.actor %}{{ log.actor.username }}{% else %}-{% endif %}</td>
+                    <td>{{ log.extra|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="empty-row">監査ログはありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

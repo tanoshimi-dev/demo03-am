@@ -2,6 +2,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from assets.models import Asset
+from auditlogs.models import AuditLog
+from auditlogs.services import log_action
 
 from .models import IncidentReport
 
@@ -38,6 +40,13 @@ def report_incident(asset: Asset, incident_type: str, reporter, description: str
     )
     asset.status = status_map[incident_type]
     asset.save(update_fields=["status", "updated_at"])
+    log_action(
+        AuditLog.ACTION_INCIDENT_REPORTED,
+        actor=reporter,
+        asset_code=asset.asset_code,
+        object_repr=str(report),
+        extra={"incident_type": incident_type},
+    )
     return report
 
 
@@ -69,4 +78,10 @@ def resolve_incident(
     asset = incident_report.asset
     asset.status = Asset.STATUS_IN_STOCK
     asset.save(update_fields=["status", "updated_at"])
+    log_action(
+        AuditLog.ACTION_INCIDENT_RESOLVED,
+        actor=resolver,
+        asset_code=incident_report.asset.asset_code,
+        object_repr=str(incident_report),
+    )
     return incident_report

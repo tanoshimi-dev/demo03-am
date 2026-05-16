@@ -2,6 +2,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from assets.models import Asset
+from auditlogs.models import AuditLog
+from auditlogs.services import log_action
 
 from .models import InventoryResult, InventorySession
 
@@ -35,6 +37,13 @@ def record_inventory_result(
         asset=asset,
         defaults={"status": status, "notes": notes, "recorded_by": recorded_by},
     )
+    log_action(
+        AuditLog.ACTION_INVENTORY_RECORDED,
+        actor=recorded_by,
+        asset_code=asset.asset_code,
+        object_repr=str(result),
+        extra={"status": status, "session": session.name},
+    )
     return result
 
 
@@ -46,6 +55,12 @@ def close_inventory_session(session: InventorySession, closed_by) -> InventorySe
     session.closed_by = closed_by
     session.closed_at = timezone.now()
     session.save(update_fields=["status", "closed_by", "closed_at", "updated_at"])
+    log_action(
+        AuditLog.ACTION_INVENTORY_CLOSED,
+        actor=closed_by,
+        asset_code="",
+        object_repr=str(session),
+    )
     return session
 
 

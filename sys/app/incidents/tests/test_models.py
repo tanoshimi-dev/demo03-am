@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from assets.models import Asset, AssetCategory
+from auditlogs.models import AuditLog
 from incidents.models import IncidentReport
 from incidents.services import IncidentError, report_incident, resolve_incident
 from loans.models import LoanRecord, LoanRequest
@@ -151,3 +152,41 @@ class IncidentServiceTests(TestCase):
 
         asset.refresh_from_db()
         self.assertEqual(asset.status, Asset.STATUS_IN_REPAIR)
+
+
+class IncidentAuditLogTests(TestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(code="phone", name="Phone")
+        self.asset = Asset.objects.create(
+            asset_code="PHONE-AUDIT",
+            name="Audit Phone",
+            category=self.category,
+            serial_number="SN-PHONE-AUDIT",
+        )
+        self.reporter = User.objects.create_user(username="incident-reporter", password="password")
+        self.resolver = User.objects.create_user(username="incident-resolver", password="password")
+
+    def test_report_and_resolve_incident_write_audit_logs(self):
+        report = report_incident(
+            asset=self.asset,
+            incident_type=IncidentReport.TYPE_BREAKDOWN,
+            reporter=self.reporter,
+            description="screen issue",
+        )
+        resolve_incident(report, resolver=self.resolver, resolution_notes="fixed")
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_INCIDENT_REPORTED,
+                actor=self.reporter,
+                asset_code=self.asset.asset_code,
+                extra__incident_type=IncidentReport.TYPE_BREAKDOWN,
+            ).exists()
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_INCIDENT_RESOLVED,
+                actor=self.resolver,
+                asset_code=self.asset.asset_code,
+            ).exists()
+        )

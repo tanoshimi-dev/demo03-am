@@ -128,7 +128,7 @@ class LoanRejectView(AdminLoanRequiredMixin, View):
     def post(self, request, pk):
         loan_request = get_object_or_404(LoanRequest, pk=pk)
         try:
-            reject_loan_request(loan_request=loan_request)
+            reject_loan_request(loan_request=loan_request, rejector=request.user)
             messages.success(request, f"申請番号 {pk} を却下しました。")
         except LoanTransitionError as exc:
             messages.error(request, str(exc))

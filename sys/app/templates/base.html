@@ -10,7 +10,16 @@
 <body>
     <div class="page-shell">
         <header class="site-header">
-            <a class="site-title" href="/">demo03_am</a>
+            <a class="site-title" href="{% url 'home' %}">demo03_am</a>
+            <nav class="site-nav" aria-label="Primary">
+                <ul class="site-nav-list">
+                    <li><a class="site-nav-link" href="{% url 'home' %}">ホーム</a></li>
+                    <li><a class="site-nav-link" href="{% url 'assets:list' %}">資産一覧</a></li>
+                    <li><a class="site-nav-link" href="{% url 'loans:my_list' %}">貸出申請一覧</a></li>
+                    <li><a class="site-nav-link" href="{% url 'loans:admin_list' %}">管理者向け</a></li>
+                    <li><a class="site-nav-link" href="{% url 'auditlogs:list' %}">監査ログ</a></li>
+                </ul>
+            </nav>
         </header>
         <main class="page-content">
             {% if messages %}

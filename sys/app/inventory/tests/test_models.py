@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 
 from assets.models import Asset, AssetCategory
+from auditlogs.models import AuditLog
 from inventory.models import InventoryResult, InventorySession
 from inventory.services import (
     InventoryError,
@@ -119,3 +120,42 @@ class InventoryServiceTests(TestCase):
 
         self.assertEqual(len(discrepancies), 1)
         self.assertEqual(discrepancies[0].asset, in_stock_asset)
+
+
+class InventoryAuditLogTests(TestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(code="monitor", name="Monitor")
+        self.user = User.objects.create_user(username="inventory-auditor", password="password")
+        self.session = open_inventory_session("2026Q3", created_by=self.user)
+        self.asset = Asset.objects.create(
+            asset_code="MON-AUDIT",
+            name="Audit Monitor",
+            category=self.category,
+            serial_number="SN-MON-AUDIT",
+        )
+
+    def test_record_and_close_write_audit_logs(self):
+        record_inventory_result(
+            session=self.session,
+            asset=self.asset,
+            status=InventoryResult.STATUS_CONFIRMED,
+            recorded_by=self.user,
+            notes="checked",
+        )
+        close_inventory_session(self.session, closed_by=self.user)
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_INVENTORY_RECORDED,
+                actor=self.user,
+                asset_code=self.asset.asset_code,
+                extra__status=InventoryResult.STATUS_CONFIRMED,
+            ).exists()
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_INVENTORY_CLOSED,
+                actor=self.user,
+                object_repr__contains="2026Q3",
+            ).exists()
+        )

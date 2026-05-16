@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from accounts.models import Account, AppRole
 from assets.models import Asset, AssetCategory
+from auditlogs.models import AuditLog
 from loans.models import LoanRecord, LoanRequest, ReturnRecord
 from loans.services import (
     LoanEligibilityError,
@@ -283,3 +284,88 @@ class ReturnServiceTests(TestCase):
         confirm_return(loan_record=loan_record, receiver=self.approver)
         asset.refresh_from_db()
         self.assertEqual(asset.status, Asset.STATUS_IN_STOCK)
+
+
+class AuditLogIntegrationTests(TestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(code="tablet", name="Tablet")
+        self.asset = Asset.objects.create(
+            asset_code="TABLET-001",
+            name="iPad Air",
+            category=self.category,
+            status=Asset.STATUS_IN_STOCK,
+            serial_number="SN-TABLET-001",
+        )
+        self.requester = User.objects.create_user(username="audit-requester", password="password")
+        self.admin = User.objects.create_user(username="audit-admin", password="password")
+
+    def test_create_request_and_approve_write_audit_logs(self):
+        loan_request = create_loan_request(
+            asset=self.asset,
+            requester=self.requester,
+            expected_start_date=datetime.date.today(),
+        )
+        loan_record = approve_loan_request(loan_request=loan_request, approver=self.admin)
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_LOAN_REQUESTED,
+                actor=self.requester,
+                asset_code=self.asset.asset_code,
+            ).exists()
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_LOAN_APPROVED,
+                actor=self.admin,
+                asset_code=self.asset.asset_code,
+                object_repr=str(loan_record),
+            ).exists()
+        )
+
+    def test_reject_and_return_flow_write_audit_logs(self):
+        rejected_request = create_loan_request(
+            asset=self.asset,
+            requester=self.requester,
+            expected_start_date=datetime.date.today(),
+        )
+        reject_loan_request(loan_request=rejected_request, rejector=self.admin)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_LOAN_REJECTED,
+                actor=self.admin,
+                asset_code=self.asset.asset_code,
+            ).exists()
+        )
+
+        second_asset = Asset.objects.create(
+            asset_code="TABLET-002",
+            name="Surface Go",
+            category=self.category,
+            status=Asset.STATUS_IN_STOCK,
+            serial_number="SN-TABLET-002",
+        )
+        approved_request = create_loan_request(
+            asset=second_asset,
+            requester=self.requester,
+            expected_start_date=datetime.date.today(),
+        )
+        loan_record = approve_loan_request(loan_request=approved_request, approver=self.admin)
+
+        request_return(loan_record=loan_record)
+        confirm_return(loan_record=loan_record, receiver=self.admin)
+
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_RETURN_REQUESTED,
+                actor__isnull=True,
+                asset_code=second_asset.asset_code,
+            ).exists()
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action=AuditLog.ACTION_RETURN_CONFIRMED,
+                actor=self.admin,
+                asset_code=second_asset.asset_code,
+            ).exists()
+        )
