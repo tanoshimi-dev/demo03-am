@@ -2,7 +2,7 @@
 
 `demo03_am` は、tanoshimi.dev 向けの **IT資産・端末管理デモ** を整理・実装していくための作業ディレクトリです。
 
-現時点では `Step 5` まで進み、Django / PostgreSQL / Docker Compose の土台、ポータル認証引継ぎを受けるための `accounts` 基盤、資産台帳の `assets` 基盤、資産一覧 / 詳細の参照導線、貸出申請フローまで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
+現時点では `Step 6` まで進み、Django / PostgreSQL / Docker Compose の土台、ポータル認証引継ぎを受けるための `accounts` 基盤、資産台帳の `assets` 基盤、資産一覧 / 詳細の参照導線、貸出申請フロー、承認・返却フローまで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
 
 ## 概要
 
@@ -20,7 +20,7 @@
 
 ## 現在の位置づけ
 
-このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 5 まで進み、Django プロジェクト本体、認証受け皿、資産台帳の中核モデルと Admin 基盤、利用者向け / 管理者向けの資産参照導線、貸出申請フローまで整備しています。
+このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 6 まで進み、Django プロジェクト本体、認証受け皿、資産台帳の中核モデルと Admin 基盤、利用者向け / 管理者向けの資産参照導線、貸出申請フロー、承認・返却フローまで整備しています。
 
 ## ローカル開発の前提
 
@@ -65,10 +65,17 @@ docker-composeファイルのサービス名は、tdev-demo03-を接頭辞とし
 
 - `loans` アプリで貸出申請・貸出記録・返却記録を管理する
 - `/loans/request/<asset_code>/` で認証済みユーザーが貸出申請を行える
-- `/loans/mine/` で自分の申請一覧を確認できる
+- `/loans/mine/` で自分の申請一覧を確認できる（承認済みの場合は返却申請ボタンあり）
 - `/loans/admin/` で管理者が全申請を一覧できる（`asset-admin` / `sysadmin` ロール限定）
 - 貸出可否（在庫状態確認・重複申請チェック）はサーバー側で判定する
-- 承認・返却フローは Step 6 で追加する
+
+## 承認・返却フローの現状
+
+- `/loans/admin/<pk>/approve/` で管理者が申請を承認し、Asset を on_loan に更新する
+- `/loans/admin/<pk>/reject/` で管理者が申請を却下する
+- `/loans/mine/<pk>/return-request/` で申請者本人が返却申請を提出できる
+- `/loans/admin/return-confirm/<pk>/` で管理者が返却確認し、Asset を in_stock に戻す
+- すべての状態遷移は `@transaction.atomic` で整合性を保証する
 
 ## 台帳初期データ方針
 

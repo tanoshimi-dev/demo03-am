@@ -26,13 +26,8 @@
     </form>
 </section>
 
-<section class="card notice-card">
-    <h2>管理者向け表示</h2>
-    <p>承認・却下の処理は Step 6 で追加します。</p>
-    <p><a href="/admin/loans/loanrequest/">Admin の申請一覧を開く</a></p>
-</section>
-
 <section class="card">
+    <h2>貸出申請</h2>
     <div class="table-wrap">
         <table class="data-table">
             <thead>
@@ -45,6 +40,7 @@
                     <th>利用開始予定日</th>
                     <th>返却予定日</th>
                     <th>申請日</th>
+                    <th>操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,14 +54,72 @@
                     <td>{{ req.expected_start_date|date:"Y-m-d" }}</td>
                     <td>{{ req.expected_return_date|date:"Y-m-d"|default:"-" }}</td>
                     <td>{{ req.created_at|date:"Y-m-d" }}</td>
+                    <td>
+                        {% if req.status == "pending" %}
+                        <form method="post" action="{% url 'loans:approve' req.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" class="button button-small">承認</button>
+                        </form>
+                        <form method="post" action="{% url 'loans:reject' req.pk %}" style="display:inline">
+                            {% csrf_token %}
+                            <button type="submit" class="button button-small button-danger">却下</button>
+                        </form>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="empty-row">申請はありません。</td>
+                    <td colspan="9" class="empty-row">申請はありません。</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+</section>
+
+<section class="card">
+    <h2>貸出中（返却待ち）</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>貸出番号</th>
+                    <th>資産コード</th>
+                    <th>資産名</th>
+                    <th>利用者</th>
+                    <th>貸出開始日</th>
+                    <th>返却予定日</th>
+                    <th>返却申請</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in active_loans %}
+                <tr>
+                    <td>{{ record.pk }}</td>
+                    <td><a href="{% url 'assets:detail' record.loan_request.asset.asset_code %}">{{ record.loan_request.asset.asset_code }}</a></td>
+                    <td>{{ record.loan_request.asset.name }}</td>
+                    <td>{{ record.loan_request.requester.username }}</td>
+                    <td>{{ record.loan_start_date|date:"Y-m-d" }}</td>
+                    <td>{{ record.expected_return_date|date:"Y-m-d"|default:"-" }}</td>
+                    <td>{% if record.return_requested_at %}{{ record.return_requested_at|date:"Y-m-d" }}{% else %}-{% endif %}</td>
+                    <td>
+                        <a class="button button-small" href="{% url 'loans:return_confirm' record.pk %}">返却確認</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="empty-row">貸出中の資産はありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card notice-card">
+    <p><a href="/admin/loans/loanrequest/">Admin の申請一覧を開く</a></p>
 </section>
 {% endblock %}

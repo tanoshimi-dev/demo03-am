@@ -48,6 +48,7 @@ class LoanRecord(models.Model):
     )
     loan_start_date = models.DateField()
     expected_return_date = models.DateField(null=True, blank=True)
+    return_requested_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

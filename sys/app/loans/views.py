@@ -1,13 +1,24 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import CreateView, ListView
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.generic import CreateView, ListView, View
 
 from accounts.mixins import PortalLoginRequiredMixin
 from assets.models import Asset
 
 from .forms import LoanRequestForm
-from .models import LoanRequest
-from .services import LoanEligibilityError, create_loan_request
+from .models import LoanRecord, LoanRequest, ReturnRecord
+from .services import (
+    LoanEligibilityError,
+    LoanTransitionError,
+    approve_loan_request,
+    confirm_return,
+    create_loan_request,
+    reject_loan_request,
+    request_return,
+)
 
 
 def can_manage_loans(request) -> bool:
@@ -16,6 +27,18 @@ def can_manage_loans(request) -> bool:
         return False
     role_codes = set(account.roles.values_list("code", flat=True))
     return bool(role_codes.intersection({"asset-admin", "sysadmin"}))
+
+
+class AdminLoanRequiredMixin:
+    """Requires authenticated user with loan management role."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            query = urlencode({"returnTo": request.get_full_path()})
+            return redirect(f"{reverse('accounts:handover')}?{query}")
+        if not can_manage_loans(request):
+            return redirect("loans:my_list")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class LoanRequestCreateView(PortalLoginRequiredMixin, CreateView):
@@ -57,28 +80,17 @@ class MyLoanListView(PortalLoginRequiredMixin, ListView):
     def get_queryset(self):
         return (
             LoanRequest.objects.select_related("asset", "asset__category")
+            .prefetch_related("loan_record")
             .filter(requester=self.request.user)
             .order_by("-created_at")
         )
 
 
-class LoanRequestAdminListView(PortalLoginRequiredMixin, ListView):
+class LoanRequestAdminListView(AdminLoanRequiredMixin, ListView):
     model = LoanRequest
     template_name = "loans/loan_request_admin_list.html"
     context_object_name = "loan_requests"
     paginate_by = 50
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            from urllib.parse import urlencode
-
-            from django.urls import reverse
-
-            query = urlencode({"returnTo": request.get_full_path()})
-            return redirect(f"{reverse('accounts:handover')}?{query}")
-        if not can_manage_loans(request):
-            return redirect("loans:my_list")
-        return super(PortalLoginRequiredMixin, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         queryset = LoanRequest.objects.select_related(
@@ -93,4 +105,64 @@ class LoanRequestAdminListView(PortalLoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["selected_status"] = self.request.GET.get("status", "").strip()
         context["status_choices"] = LoanRequest.STATUS_CHOICES
+        context["active_loans"] = LoanRecord.objects.select_related(
+            "loan_request__asset",
+            "loan_request__asset__category",
+            "loan_request__requester",
+        ).filter(return_record__isnull=True).order_by("-created_at")
         return context
+
+
+class LoanApproveView(AdminLoanRequiredMixin, View):
+    def post(self, request, pk):
+        loan_request = get_object_or_404(LoanRequest, pk=pk)
+        try:
+            approve_loan_request(loan_request=loan_request, approver=request.user)
+            messages.success(request, f"申請番号 {pk} を承認しました。")
+        except LoanTransitionError as exc:
+            messages.error(request, str(exc))
+        return redirect("loans:admin_list")
+
+
+class LoanRejectView(AdminLoanRequiredMixin, View):
+    def post(self, request, pk):
+        loan_request = get_object_or_404(LoanRequest, pk=pk)
+        try:
+            reject_loan_request(loan_request=loan_request)
+            messages.success(request, f"申請番号 {pk} を却下しました。")
+        except LoanTransitionError as exc:
+            messages.error(request, str(exc))
+        return redirect("loans:admin_list")
+
+
+class ReturnRequestView(PortalLoginRequiredMixin, View):
+    def post(self, request, pk):
+        loan_record = get_object_or_404(
+            LoanRecord, pk=pk, loan_request__requester=request.user
+        )
+        try:
+            request_return(loan_record=loan_record)
+            messages.success(request, "返却申請を提出しました。")
+        except LoanTransitionError as exc:
+            messages.error(request, str(exc))
+        return redirect("loans:my_list")
+
+
+class ReturnConfirmView(AdminLoanRequiredMixin, View):
+    def get(self, request, pk):
+        loan_record = get_object_or_404(LoanRecord, pk=pk)
+        return render(request, "loans/return_confirm_form.html", {"loan_record": loan_record})
+
+    def post(self, request, pk):
+        loan_record = get_object_or_404(LoanRecord, pk=pk)
+        condition_notes = request.POST.get("condition_notes", "")
+        try:
+            confirm_return(
+                loan_record=loan_record,
+                receiver=request.user,
+                condition_notes=condition_notes,
+            )
+            messages.success(request, "返却を確認しました。資産を在庫に戻しました。")
+        except LoanTransitionError as exc:
+            messages.error(request, str(exc))
+        return redirect("loans:admin_list")

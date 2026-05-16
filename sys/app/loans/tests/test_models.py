@@ -5,8 +5,17 @@ from django.test import TestCase
 
 from accounts.models import Account, AppRole
 from assets.models import Asset, AssetCategory
-from loans.models import LoanRequest
-from loans.services import LoanEligibilityError, check_loan_eligibility, create_loan_request
+from loans.models import LoanRecord, LoanRequest, ReturnRecord
+from loans.services import (
+    LoanEligibilityError,
+    LoanTransitionError,
+    approve_loan_request,
+    check_loan_eligibility,
+    confirm_return,
+    create_loan_request,
+    reject_loan_request,
+    request_return,
+)
 
 
 class LoanRequestModelTests(TestCase):
@@ -123,3 +132,154 @@ class LoanEligibilityServiceTests(TestCase):
                 requester=self.user,
                 expected_start_date=datetime.date.today(),
             )
+
+
+class ApproveRejectServiceTests(TestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(code="laptop", name="Laptop")
+        self.asset = Asset.objects.create(
+            asset_code="ASSET-001",
+            name="ThinkPad X1 Carbon",
+            category=self.category,
+            status=Asset.STATUS_IN_STOCK,
+            serial_number="SN-0001",
+        )
+        self.requester = User.objects.create_user(username="requester", password="p")
+        self.approver = User.objects.create_user(username="approver", password="p")
+        self.pending_request = LoanRequest.objects.create(
+            asset=self.asset,
+            requester=self.requester,
+            status=LoanRequest.STATUS_PENDING,
+            expected_start_date=datetime.date.today(),
+        )
+
+    def test_approve_creates_loan_record_and_updates_status(self):
+        loan_record = approve_loan_request(
+            loan_request=self.pending_request,
+            approver=self.approver,
+        )
+
+        self.pending_request.refresh_from_db()
+        self.asset.refresh_from_db()
+
+        self.assertIsInstance(loan_record, LoanRecord)
+        self.assertEqual(self.pending_request.status, LoanRequest.STATUS_APPROVED)
+        self.assertEqual(self.asset.status, Asset.STATUS_ON_LOAN)
+        self.assertEqual(loan_record.approved_by, self.approver)
+
+    def test_approve_raises_if_not_pending(self):
+        self.pending_request.status = LoanRequest.STATUS_APPROVED
+        self.pending_request.save()
+
+        with self.assertRaises(LoanTransitionError) as ctx:
+            approve_loan_request(loan_request=self.pending_request, approver=self.approver)
+
+        self.assertIn("審査中の状態ではありません", str(ctx.exception))
+
+    def test_approve_raises_if_asset_not_in_stock(self):
+        self.asset.status = Asset.STATUS_ON_LOAN
+        self.asset.save()
+
+        with self.assertRaises(LoanTransitionError) as ctx:
+            approve_loan_request(loan_request=self.pending_request, approver=self.approver)
+
+        self.assertIn("貸出できません", str(ctx.exception))
+
+    def test_reject_sets_status_to_rejected(self):
+        reject_loan_request(loan_request=self.pending_request)
+
+        self.pending_request.refresh_from_db()
+        self.assertEqual(self.pending_request.status, LoanRequest.STATUS_REJECTED)
+
+    def test_reject_raises_if_not_pending(self):
+        self.pending_request.status = LoanRequest.STATUS_APPROVED
+        self.pending_request.save()
+
+        with self.assertRaises(LoanTransitionError):
+            reject_loan_request(loan_request=self.pending_request)
+
+
+class ReturnServiceTests(TestCase):
+    def setUp(self):
+        self.category = AssetCategory.objects.create(code="laptop", name="Laptop")
+        self.asset = Asset.objects.create(
+            asset_code="ASSET-001",
+            name="ThinkPad X1 Carbon",
+            category=self.category,
+            status=Asset.STATUS_ON_LOAN,
+            serial_number="SN-0001",
+        )
+        self.requester = User.objects.create_user(username="requester", password="p")
+        self.approver = User.objects.create_user(username="approver", password="p")
+        self.loan_request = LoanRequest.objects.create(
+            asset=self.asset,
+            requester=self.requester,
+            status=LoanRequest.STATUS_APPROVED,
+            expected_start_date=datetime.date.today(),
+        )
+        self.loan_record = LoanRecord.objects.create(
+            loan_request=self.loan_request,
+            approved_by=self.approver,
+            loan_start_date=datetime.date.today(),
+        )
+
+    def test_loan_record_is_on_loan_when_no_return_record(self):
+        self.assertIs(self.loan_record.is_on_loan, True)
+
+    def test_request_return_sets_return_requested_at(self):
+        request_return(loan_record=self.loan_record)
+
+        self.loan_record.refresh_from_db()
+        self.assertIsNotNone(self.loan_record.return_requested_at)
+
+    def test_request_return_raises_if_already_requested(self):
+        request_return(loan_record=self.loan_record)
+
+        with self.assertRaises(LoanTransitionError) as ctx:
+            request_return(loan_record=self.loan_record)
+
+        self.assertIn("すでに提出", str(ctx.exception))
+
+    def test_confirm_return_creates_return_record_and_restores_asset(self):
+        return_record = confirm_return(
+            loan_record=self.loan_record,
+            receiver=self.approver,
+            condition_notes="問題なし",
+        )
+
+        self.asset.refresh_from_db()
+        self.loan_record.refresh_from_db()
+
+        self.assertIsInstance(return_record, ReturnRecord)
+        self.assertEqual(self.asset.status, Asset.STATUS_IN_STOCK)
+        self.assertEqual(return_record.condition_notes, "問題なし")
+        self.assertIs(self.loan_record.is_on_loan, False)
+
+    def test_confirm_return_raises_if_already_returned(self):
+        confirm_return(loan_record=self.loan_record, receiver=self.approver)
+
+        with self.assertRaises(LoanTransitionError) as ctx:
+            confirm_return(loan_record=self.loan_record, receiver=self.approver)
+
+        self.assertIn("返却済み", str(ctx.exception))
+
+    def test_full_flow_pending_to_in_stock(self):
+        """Integration: pending → approve → request_return → confirm_return."""
+        category = AssetCategory.objects.create(code="phone", name="Phone")
+        asset = Asset.objects.create(
+            asset_code="ASSET-002", name="iPhone", category=category,
+            status=Asset.STATUS_IN_STOCK, serial_number="SN-PHONE-01",
+        )
+        req = LoanRequest.objects.create(
+            asset=asset, requester=self.requester,
+            status=LoanRequest.STATUS_PENDING,
+            expected_start_date=datetime.date.today(),
+        )
+        loan_record = approve_loan_request(loan_request=req, approver=self.approver)
+        asset.refresh_from_db()
+        self.assertEqual(asset.status, Asset.STATUS_ON_LOAN)
+
+        request_return(loan_record=loan_record)
+        confirm_return(loan_record=loan_record, receiver=self.approver)
+        asset.refresh_from_db()
+        self.assertEqual(asset.status, Asset.STATUS_IN_STOCK)

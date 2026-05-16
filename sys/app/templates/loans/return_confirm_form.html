@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}返却確認{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Return Confirm</p>
+        <h1>返却確認</h1>
+    </div>
+    <a class="button button-secondary" href="{% url 'loans:admin_list' %}">申請一覧へ戻る</a>
+</div>
+
+<section class="card">
+    <dl class="detail-list">
+        <dt>資産コード</dt>
+        <dd>{{ loan_record.loan_request.asset.asset_code }}</dd>
+        <dt>資産名</dt>
+        <dd>{{ loan_record.loan_request.asset.name }}</dd>
+        <dt>利用者</dt>
+        <dd>{{ loan_record.loan_request.requester.username }}</dd>
+        <dt>貸出開始日</dt>
+        <dd>{{ loan_record.loan_start_date|date:"Y-m-d" }}</dd>
+        <dt>返却予定日</dt>
+        <dd>{{ loan_record.expected_return_date|date:"Y-m-d"|default:"-" }}</dd>
+        <dt>返却申請日時</dt>
+        <dd>{% if loan_record.return_requested_at %}{{ loan_record.return_requested_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}</dd>
+    </dl>
+</section>
+
+<section class="card">
+    <h2>返却確認</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-field">
+            <label for="condition_notes">状態メモ（任意）</label>
+            <textarea id="condition_notes" name="condition_notes" rows="3" placeholder="外観や動作の状態など"></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="button">返却を確認する</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

@@ -5,7 +5,8 @@ from django.test import TestCase
 
 from accounts.models import Account, AppRole
 from assets.models import Asset, AssetCategory
-from loans.models import LoanRequest
+from loans.models import LoanRecord, LoanRequest, ReturnRecord
+from loans.services import approve_loan_request, confirm_return, request_return
 
 
 class LoanViewTestBase(TestCase):
@@ -178,6 +179,26 @@ class MyLoanListViewTests(LoanViewTestBase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "貸出申請はありません")
 
+    def test_shows_return_request_button_for_approved_loan(self):
+        account = self.create_logged_in_account()
+        approver = User.objects.create_user(username="approver", password="p")
+        req = LoanRequest.objects.create(
+            asset=self.asset_on_loan,
+            requester=account.user,
+            status=LoanRequest.STATUS_APPROVED,
+            expected_start_date=datetime.date.today(),
+        )
+        LoanRecord.objects.create(
+            loan_request=req,
+            approved_by=approver,
+            loan_start_date=datetime.date.today(),
+        )
+
+        response = self.client.get("/loans/mine/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "返却申請")
+
 
 class LoanRequestAdminListViewTests(LoanViewTestBase):
     def test_regular_user_is_redirected_to_my_list(self):
@@ -198,26 +219,173 @@ class LoanRequestAdminListViewTests(LoanViewTestBase):
         response = self.client.get("/loans/admin/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "貸出申請一覧")
+        self.assertContains(response, "貸出申請")
         self.assertContains(response, "ASSET-001")
 
-    def test_sysadmin_can_filter_by_status(self):
-        self.create_logged_in_account(role_codes=["sysadmin"])
-        emp = User.objects.create_user(username="emp", password="p")
+    def test_admin_list_shows_approve_reject_buttons_for_pending(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
         LoanRequest.objects.create(
             asset=self.asset_in_stock,
-            requester=emp,
+            requester=User.objects.create_user(username="emp", password="p"),
             status=LoanRequest.STATUS_PENDING,
             expected_start_date=datetime.date.today(),
         )
 
-        response = self.client.get("/loans/admin/", {"status": LoanRequest.STATUS_APPROVED})
+        response = self.client.get("/loans/admin/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "ASSET-001")
+        self.assertContains(response, "承認")
+        self.assertContains(response, "却下")
 
     def test_unauthenticated_user_is_redirected(self):
         response = self.client.get("/loans/admin/")
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/auth/handover", response["Location"])
+
+
+class LoanApproveViewTests(LoanViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.emp = User.objects.create_user(username="emp", password="p")
+        self.pending_req = LoanRequest.objects.create(
+            asset=self.asset_in_stock,
+            requester=self.emp,
+            status=LoanRequest.STATUS_PENDING,
+            expected_start_date=datetime.date.today(),
+        )
+
+    def test_admin_can_approve_pending_request(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
+
+        response = self.client.post(f"/loans/admin/{self.pending_req.pk}/approve/")
+
+        self.assertRedirects(response, "/loans/admin/")
+        self.pending_req.refresh_from_db()
+        self.asset_in_stock.refresh_from_db()
+        self.assertEqual(self.pending_req.status, LoanRequest.STATUS_APPROVED)
+        self.assertEqual(self.asset_in_stock.status, Asset.STATUS_ON_LOAN)
+
+    def test_regular_user_cannot_approve(self):
+        self.create_logged_in_account(role_codes=["employee"])
+
+        response = self.client.post(f"/loans/admin/{self.pending_req.pk}/approve/")
+
+        self.assertRedirects(response, "/loans/mine/")
+        self.pending_req.refresh_from_db()
+        self.assertEqual(self.pending_req.status, LoanRequest.STATUS_PENDING)
+
+
+class LoanRejectViewTests(LoanViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.emp = User.objects.create_user(username="emp", password="p")
+        self.pending_req = LoanRequest.objects.create(
+            asset=self.asset_in_stock,
+            requester=self.emp,
+            status=LoanRequest.STATUS_PENDING,
+            expected_start_date=datetime.date.today(),
+        )
+
+    def test_admin_can_reject_pending_request(self):
+        self.create_logged_in_account(role_codes=["sysadmin"])
+
+        response = self.client.post(f"/loans/admin/{self.pending_req.pk}/reject/")
+
+        self.assertRedirects(response, "/loans/admin/")
+        self.pending_req.refresh_from_db()
+        self.assertEqual(self.pending_req.status, LoanRequest.STATUS_REJECTED)
+
+
+class ReturnRequestViewTests(LoanViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.account = None
+        self.approver = User.objects.create_user(username="approver", password="p")
+
+    def _setup_active_loan(self) -> LoanRecord:
+        self.account = self.create_logged_in_account()
+        req = LoanRequest.objects.create(
+            asset=self.asset_on_loan,
+            requester=self.account.user,
+            status=LoanRequest.STATUS_APPROVED,
+            expected_start_date=datetime.date.today(),
+        )
+        return LoanRecord.objects.create(
+            loan_request=req,
+            approved_by=self.approver,
+            loan_start_date=datetime.date.today(),
+        )
+
+    def test_user_can_submit_return_request(self):
+        loan_record = self._setup_active_loan()
+
+        response = self.client.post(f"/loans/mine/{loan_record.pk}/return-request/")
+
+        self.assertRedirects(response, "/loans/mine/")
+        loan_record.refresh_from_db()
+        self.assertIsNotNone(loan_record.return_requested_at)
+
+    def test_user_cannot_submit_return_request_for_others_loan(self):
+        other_user = User.objects.create_user(username="other", password="p")
+        req = LoanRequest.objects.create(
+            asset=self.asset_on_loan,
+            requester=other_user,
+            status=LoanRequest.STATUS_APPROVED,
+            expected_start_date=datetime.date.today(),
+        )
+        loan_record = LoanRecord.objects.create(
+            loan_request=req, approved_by=self.approver,
+            loan_start_date=datetime.date.today(),
+        )
+        self.create_logged_in_account()
+
+        response = self.client.post(f"/loans/mine/{loan_record.pk}/return-request/")
+
+        self.assertEqual(response.status_code, 404)
+
+
+class ReturnConfirmViewTests(LoanViewTestBase):
+    def setUp(self):
+        super().setUp()
+        self.emp = User.objects.create_user(username="emp", password="p")
+        self.approver_user = User.objects.create_user(username="approver_u", password="p")
+        req = LoanRequest.objects.create(
+            asset=self.asset_on_loan,
+            requester=self.emp,
+            status=LoanRequest.STATUS_APPROVED,
+            expected_start_date=datetime.date.today(),
+        )
+        self.loan_record = LoanRecord.objects.create(
+            loan_request=req,
+            approved_by=self.approver_user,
+            loan_start_date=datetime.date.today(),
+        )
+
+    def test_admin_sees_return_confirm_form(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
+
+        response = self.client.get(f"/loans/admin/return-confirm/{self.loan_record.pk}/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "返却確認")
+
+    def test_admin_can_confirm_return(self):
+        self.create_logged_in_account(role_codes=["asset-admin"])
+
+        response = self.client.post(
+            f"/loans/admin/return-confirm/{self.loan_record.pk}/",
+            {"condition_notes": "良好"},
+        )
+
+        self.assertRedirects(response, "/loans/admin/")
+        self.asset_on_loan.refresh_from_db()
+        self.assertEqual(self.asset_on_loan.status, Asset.STATUS_IN_STOCK)
+        self.assertTrue(ReturnRecord.objects.filter(loan_record=self.loan_record).exists())
+
+    def test_regular_user_cannot_access_return_confirm(self):
+        self.create_logged_in_account(role_codes=["employee"])
+
+        response = self.client.get(f"/loans/admin/return-confirm/{self.loan_record.pk}/")
+
+        self.assertRedirects(response, "/loans/mine/")
