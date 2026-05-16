@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}棚卸しセッション一覧{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Inventory</p>
+        <h1>棚卸しセッション一覧</h1>
+    </div>
+    <a class="button" href="{% url 'inventory:session_create' %}">新しいセッションを開始</a>
+</div>
+
+<section class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>セッション名</th>
+                    <th>状態</th>
+                    <th>作成者</th>
+                    <th>開始日時</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td>{{ session.pk }}</td>
+                    <td>{{ session.name }}</td>
+                    <td>{{ session.get_status_display }}</td>
+                    <td>{{ session.created_by.username }}</td>
+                    <td>{{ session.created_at|date:"Y-m-d H:i" }}</td>
+                    <td><a class="button button-small" href="{% url 'inventory:session_detail' session.pk %}">詳細</a></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-row">棚卸しセッションはありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card notice-card">
+    <p><a href="/">ホームへ戻る</a></p>
+</section>
+{% endblock %}

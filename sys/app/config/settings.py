@@ -19,6 +19,8 @@ INSTALLED_APPS = [
     "accounts",
     "assets",
     "loans",
+    "incidents",
+    "inventory",
 ]
 
 MIDDLEWARE = [

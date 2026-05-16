@@ -125,6 +125,21 @@ a:hover {
     color: var(--text);
 }
 
+.button-small {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+.button-danger {
+    background: #dc2626;
+}
+
+.button-danger:hover {
+    background: #b91c1c;
+}
+
 .filter-form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -199,6 +214,57 @@ a:hover {
 
 .detail-list dd {
     margin: 0;
+}
+
+.form-field {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.form-field label {
+    font-weight: 600;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea,
+.inline-form-group input,
+.inline-form-group select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+}
+
+.form-field textarea {
+    resize: vertical;
+}
+
+.inline-form-group {
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) minmax(200px, 2fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.field-error {
+    margin: 0;
+    color: #b91c1c;
+    font-size: 0.95rem;
+}
+
+.form-errors {
+    margin-bottom: 16px;
 }
 
 .link-list {

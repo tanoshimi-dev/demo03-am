@@ -2,7 +2,7 @@
 
 `demo03_am` は、tanoshimi.dev 向けの **IT資産・端末管理デモ** を整理・実装していくための作業ディレクトリです。
 
-現時点では `Step 6` まで進み、Django / PostgreSQL / Docker Compose の土台、ポータル認証引継ぎを受けるための `accounts` 基盤、資産台帳の `assets` 基盤、資産一覧 / 詳細の参照導線、貸出申請フロー、承認・返却フローまで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
+現時点では `Step 7` まで進み、Django / PostgreSQL / Docker Compose の土台、ポータル認証引継ぎを受けるための `accounts` 基盤、資産台帳の `assets` 基盤、資産一覧 / 詳細の参照導線、貸出申請フロー、承認・返却フロー、インシデント管理、棚卸しセッション管理まで実装済みです。主要な方向性は `doc/spec/it-asset-management-demo.md` を基準にしています。
 
 ## 概要
 
@@ -20,7 +20,7 @@
 
 ## 現在の位置づけ
 
-このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 6 まで進み、Django プロジェクト本体、認証受け皿、資産台帳の中核モデルと Admin 基盤、利用者向け / 管理者向けの資産参照導線、貸出申請フロー、承認・返却フローまで整備しています。
+このディレクトリは、IT資産管理デモの仕様整理と実装を進めるための場所です。現在は Step 7 まで進み、Django プロジェクト本体、認証受け皿、資産台帳の中核モデルと Admin 基盤、利用者向け / 管理者向けの資産参照導線、貸出申請フロー、承認・返却フロー、故障 / 紛失 / 廃棄のインシデント管理、棚卸しセッションと差異確認まで整備しています。
 
 ## ローカル開発の前提
 
@@ -74,8 +74,23 @@ docker-composeファイルのサービス名は、tdev-demo03-を接頭辞とし
 - `/loans/admin/<pk>/approve/` で管理者が申請を承認し、Asset を on_loan に更新する
 - `/loans/admin/<pk>/reject/` で管理者が申請を却下する
 - `/loans/mine/<pk>/return-request/` で申請者本人が返却申請を提出できる
-- `/loans/admin/return-confirm/<pk>/` で管理者が返却確認し、Asset を in_stock に戻す
+- `/loans/admin/return-confirm/<pk>/` で管理者が返却確認し、通常は Asset を `in_stock` に戻す（インシデントで別状態に変更済みの場合はその状態を維持する）
 - すべての状態遷移は `@transaction.atomic` で整合性を保証する
+
+## インシデント管理の現状
+
+- `incidents` アプリで故障・紛失・廃棄の記録を管理する
+- `/incidents/` で管理者がインシデント一覧を確認できる（`asset-admin` / `sysadmin` ロール限定）
+- `/incidents/report/<asset_code>/` で資産ごとにインシデントを記録できる
+- 故障は解決処理により `in_repair` から `in_stock` に戻せるが、紛失・廃棄は恒久状態として扱う
+- `in_repair` / `lost` / `retired` の資産は既存の貸出可否判定で貸出不可になる
+
+## 棚卸しの現状
+
+- `inventory` アプリで棚卸しセッションの開始・結果入力・完了を管理する
+- `/inventory/` で管理者がセッション一覧を確認し、`/inventory/new/` で新規セッションを開始できる
+- `/inventory/<pk>/` で全資産の実査結果（確認済み / 所在不明）を入力できる
+- 所在不明として記録された `in_stock` 資産を差異として確認できる
 
 ## 台帳初期データ方針
 
@@ -95,6 +110,8 @@ demo03_am/
       accounts/
       assets/
       loans/
+      incidents/
+      inventory/
       manage.py
       config/
       templates/

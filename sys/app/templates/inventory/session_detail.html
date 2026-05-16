@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}棚卸しセッション詳細{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Inventory Detail</p>
+        <h1>{{ session.name }}</h1>
+    </div>
+    <a class="button button-secondary" href="{% url 'inventory:session_list' %}">一覧へ戻る</a>
+</div>
+
+<section class="card">
+    <div class="page-heading">
+        <dl class="detail-list">
+            <dt>状態</dt>
+            <dd>{{ session.get_status_display }}</dd>
+            <dt>作成者</dt>
+            <dd>{{ session.created_by.username }}</dd>
+            <dt>開始日時</dt>
+            <dd>{{ session.created_at|date:"Y-m-d H:i" }}</dd>
+            <dt>完了日時</dt>
+            <dd>{{ session.closed_at|date:"Y-m-d H:i"|default:"-" }}</dd>
+            <dt>メモ</dt>
+            <dd>{{ session.notes|linebreaksbr|default:"-" }}</dd>
+        </dl>
+        {% if session.status == "open" %}
+        <form method="post" action="{% url 'inventory:session_close' session.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="button button-danger">セッションを完了</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+
+<section class="card">
+    <h2>記録済み結果</h2>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>資産コード</th>
+                    <th>資産名</th>
+                    <th>結果</th>
+                    <th>記録者</th>
+                    <th>メモ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr>
+                    <td><a href="{% url 'assets:detail' result.asset.asset_code %}">{{ result.asset.asset_code }}</a></td>
+                    <td>{{ result.asset.name }}</td>
+                    <td>{{ result.get_status_display }}</td>
+                    <td>{{ result.recorded_by.username }}</td>
+                    <td>{{ result.notes|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-row">まだ結果はありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card notice-card">
+    <h2>差異（所在不明）</h2>
+    <ul class="link-list">
+        {% for result in discrepancies %}
+        <li>{{ result.asset.asset_code }} / {{ result.asset.name }} / {{ result.get_status_display }}</li>
+        {% empty %}
+        <li>差異はありません。</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section class="card">
+    <h2>実査結果を入力</h2>
+    {% if session.status == "closed" %}
+    <p>このセッションは完了済みのため、結果を追加できません。</p>
+    {% else %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>資産コード</th>
+                    <th>資産名</th>
+                    <th>DB状態</th>
+                    <th>前回記録</th>
+                    <th>入力</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in record_rows %}
+                <tr>
+                    <td>{{ row.asset.asset_code }}</td>
+                    <td>{{ row.asset.name }}</td>
+                    <td>{{ row.asset.get_status_display }}</td>
+                    <td>
+                        {% if row.result %}
+                        {{ row.result.get_status_display }}{% if row.result.notes %}<br>{{ row.result.notes }}{% endif %}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="post" action="{% url 'inventory:result_input' session.pk row.asset.asset_code %}">
+                            {% csrf_token %}
+                            <div class="inline-form-group">
+                                <select name="status">
+                                    {% for value, label in result_status_choices %}
+                                    <option value="{{ value }}"{% if row.result and row.result.status == value %} selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="notes" value="{% if row.result %}{{ row.result.notes }}{% endif %}" placeholder="メモ">
+                                <button type="submit" class="button button-small">保存</button>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

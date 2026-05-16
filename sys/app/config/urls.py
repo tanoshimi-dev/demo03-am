@@ -7,5 +7,7 @@ urlpatterns = [
     path("", include("accounts.urls")),
     path("", include("assets.urls")),
     path("", include("loans.urls")),
+    path("", include("incidents.urls")),
+    path("", include("inventory.urls")),
     path("admin/", admin.site.urls),
 ]

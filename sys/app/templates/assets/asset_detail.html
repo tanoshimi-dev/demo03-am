@@ -40,6 +40,7 @@
 <section class="card notice-card">
     <h2>管理者向け表示</h2>
     <p>カテゴリ、状態、保管場所の更新は Django Admin から行えます。</p>
+    <p><a class="button" href="{% url 'incidents:report' asset.asset_code %}">インシデント報告</a></p>
 </section>
 {% else %}
 <section class="card notice-card">

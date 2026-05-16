@@ -110,6 +110,7 @@ def confirm_return(
         condition_notes=condition_notes,
     )
     asset = loan_record.loan_request.asset
-    asset.status = Asset.STATUS_IN_STOCK
-    asset.save(update_fields=["status", "updated_at"])
+    if asset.status == Asset.STATUS_ON_LOAN:
+        asset.status = Asset.STATUS_IN_STOCK
+        asset.save(update_fields=["status", "updated_at"])
     return return_record
