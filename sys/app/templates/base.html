@@ -15,11 +15,34 @@
                 <ul class="site-nav-list">
                     <li><a class="site-nav-link" href="{% url 'home' %}">ホーム</a></li>
                     <li><a class="site-nav-link" href="{% url 'assets:list' %}">資産一覧</a></li>
-                    <li><a class="site-nav-link" href="{% url 'loans:my_list' %}">貸出申請一覧</a></li>
-                    <li><a class="site-nav-link" href="{% url 'loans:admin_list' %}">管理者向け</a></li>
+                    <li><a class="site-nav-link" href="{% url 'loans:my_list' %}">自分の貸出</a></li>
+                    {% if can_manage %}
+                    <li><a class="site-nav-link" href="{% url 'loans:admin_list' %}">貸出管理</a></li>
+                    <li><a class="site-nav-link" href="{% url 'incidents:list' %}">インシデント</a></li>
+                    <li><a class="site-nav-link" href="{% url 'inventory:session_list' %}">棚卸し</a></li>
                     <li><a class="site-nav-link" href="{% url 'auditlogs:list' %}">監査ログ</a></li>
+                    {% endif %}
                 </ul>
             </nav>
+            {% if auth_mode == "dev-header" %}
+            <div class="demo-switcher" aria-label="デモユーザー切替">
+                <span class="demo-switcher-label">
+                    👤 {% if current_account %}{{ current_account.display_name }}{% else %}未ログイン{% endif %}
+                </span>
+                {% for acct in demo_accounts %}
+                <form method="post" action="{% url 'accounts:demo_switch' %}" class="demo-switcher-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="portal_subject" value="{{ acct.portal_subject }}">
+                    <input type="hidden" name="returnTo" value="{{ request.path }}">
+                    <button type="submit"
+                        class="demo-switcher-btn{% if current_account and current_account.portal_subject == acct.portal_subject %} demo-switcher-btn--active{% endif %}"
+                        {% if current_account and current_account.portal_subject == acct.portal_subject %}disabled{% endif %}>
+                        {{ acct.display_name }}
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+            {% endif %}
         </header>
         <main class="page-content">
             {% if messages %}
