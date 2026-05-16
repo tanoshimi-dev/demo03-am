@@ -44,7 +44,13 @@
 {% else %}
 <section class="card notice-card">
     <h2>利用者向け表示</h2>
-    <p>利用者は台帳情報を参照できます。貸出申請導線は後続 Step で追加します。</p>
+    {% if asset.is_available_for_loan %}
+    <p>この資産は貸出可能です。</p>
+    <a class="button" href="{% url 'loans:request' asset.asset_code %}">貸出申請する</a>
+    {% else %}
+    <p>この資産は現在貸出できません（状態: {{ asset.get_status_display }}）。</p>
+    {% endif %}
+    <p><a href="{% url 'loans:my_list' %}">自分の貸出申請一覧を見る</a></p>
 </section>
 {% endif %}
 {% endblock %}

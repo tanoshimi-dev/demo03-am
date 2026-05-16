@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}貸出申請一覧（管理者）{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Loan Admin</p>
+        <h1>貸出申請一覧</h1>
+    </div>
+    <a class="button button-secondary" href="/">ホームへ戻る</a>
+</div>
+
+<section class="card">
+    <form method="get" class="filter-form">
+        <label>
+            <span>状態</span>
+            <select name="status">
+                <option value="">すべて</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="button">絞り込む</button>
+    </form>
+</section>
+
+<section class="card notice-card">
+    <h2>管理者向け表示</h2>
+    <p>承認・却下の処理は Step 6 で追加します。</p>
+    <p><a href="/admin/loans/loanrequest/">Admin の申請一覧を開く</a></p>
+</section>
+
+<section class="card">
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>申請番号</th>
+                    <th>資産コード</th>
+                    <th>資産名</th>
+                    <th>申請者</th>
+                    <th>状態</th>
+                    <th>利用開始予定日</th>
+                    <th>返却予定日</th>
+                    <th>申請日</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in loan_requests %}
+                <tr>
+                    <td>{{ req.pk }}</td>
+                    <td><a href="{% url 'assets:detail' req.asset.asset_code %}">{{ req.asset.asset_code }}</a></td>
+                    <td>{{ req.asset.name }}</td>
+                    <td>{{ req.requester.username }}</td>
+                    <td>{{ req.get_status_display }}</td>
+                    <td>{{ req.expected_start_date|date:"Y-m-d" }}</td>
+                    <td>{{ req.expected_return_date|date:"Y-m-d"|default:"-" }}</td>
+                    <td>{{ req.created_at|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="empty-row">申請はありません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
