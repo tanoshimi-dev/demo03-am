@@ -94,7 +94,17 @@ a:hover {
     text-decoration: none;
 }
 
-.page-content {
+.site-nav-link--portal {
+    background: var(--accent);
+    color: #fff;
+}
+
+.site-nav-link--portal:hover {
+    background: var(--accent-strong);
+    color: #fff;
+}
+
+
     display: grid;
     gap: 20px;
 }

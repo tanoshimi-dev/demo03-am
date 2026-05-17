@@ -19,6 +19,7 @@ def demo_context(request):
             "demo_accounts": [],
             "current_account": account,
             "can_manage": can_manage,
+            "portal_top_url": getattr(settings, "PORTAL_ISSUER", "") or "",
         }
 
     subjects = getattr(settings, "DEMO_SWITCH_SUBJECTS", [])
@@ -32,4 +33,5 @@ def demo_context(request):
         "demo_accounts": demo_accounts,
         "current_account": account,
         "can_manage": can_manage,
+        "portal_top_url": getattr(settings, "PORTAL_ISSUER", "") or "",
     }
