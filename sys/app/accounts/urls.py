@@ -9,4 +9,5 @@ urlpatterns = [
     path("auth/handover", views.handover_view, name="handover"),
     path("auth/demo-switch", views.demo_switch_view, name="demo_switch"),
     path("auth/logout", views.logout_view, name="logout"),
+    path("auth/jwt-check", views.jwt_check_view, name="jwt_check"),
 ]

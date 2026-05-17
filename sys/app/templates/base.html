@@ -22,6 +22,9 @@
                     <li><a class="site-nav-link" href="{% url 'inventory:session_list' %}">棚卸し</a></li>
                     <li><a class="site-nav-link" href="{% url 'auditlogs:list' %}">監査ログ</a></li>
                     {% endif %}
+                    {% if debug or request.user.is_staff %}
+                    <li><a class="site-nav-link" href="{% url 'accounts:jwt_check' %}">🔍 JWT診断</a></li>
+                    {% endif %}
                 </ul>
             </nav>
             {% if auth_mode == "dev-header" %}
