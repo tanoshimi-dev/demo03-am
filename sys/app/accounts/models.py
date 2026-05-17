@@ -38,9 +38,11 @@ class Account(models.Model):
 class AccountSession(models.Model):
     SOURCE_DEV_HEADER = "dev-header"
     SOURCE_PORTAL_HEADER = "portal-header"
+    SOURCE_PORTAL_JWT = "portal-jwt"
     SOURCE_CHOICES = [
         (SOURCE_DEV_HEADER, "Dev header"),
         (SOURCE_PORTAL_HEADER, "Portal header"),
+        (SOURCE_PORTAL_JWT, "Portal JWT cookie"),
     ]
 
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="sessions")

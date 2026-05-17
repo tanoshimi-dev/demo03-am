@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
+import threading
 from dataclasses import dataclass
 from urllib.parse import urlencode, urlparse
+
+import jwt as _jwt
+from jwt import PyJWKClient as _PyJWKClient
+
+import requests as _requests
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -11,6 +18,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from .models import Account, AccountSession, AppRole
+
+logger = logging.getLogger(__name__)
+
+# Module-level JWKS client cache (one per URL, reused across requests)
+_jwks_lock = threading.Lock()
+_jwks_clients: dict[str, _PyJWKClient] = {}
 
 
 @dataclass(frozen=True)
@@ -52,6 +65,98 @@ def build_portal_login_url(request, return_to: str) -> str | None:
 
 
 def resolve_portal_identity(request) -> PortalIdentity | None:
+    mode = settings.AUTH_MODE
+    if mode == "portal":
+        return _resolve_portal_identity_from_jwt(request)
+    if mode == "dev-header":
+        return _resolve_portal_identity_from_header(request)
+    return None
+
+
+def _get_jwks_client(jwks_url: str) -> _PyJWKClient:
+    if jwks_url not in _jwks_clients:
+        with _jwks_lock:
+            if jwks_url not in _jwks_clients:
+                _jwks_clients[jwks_url] = _RequestsJWKClient(jwks_url, cache_keys=True)
+    return _jwks_clients[jwks_url]
+
+
+class _RequestsJWKClient(_PyJWKClient):
+    """PyJWKClient that uses requests instead of urllib to avoid Cloudflare TLS blocking."""
+
+    def fetch_data(self):
+        from jwt.exceptions import PyJWKClientConnectionError
+
+        try:
+            response = _requests.get(self.uri, timeout=self.timeout)
+            response.raise_for_status()
+            return response.json()
+        except _requests.RequestException as exc:
+            raise PyJWKClientConnectionError(
+                f'Fail to fetch data from the url, err: "{exc}"'
+            )
+
+
+def _resolve_portal_identity_from_jwt(request) -> PortalIdentity | None:
+    jwks_url = (getattr(settings, "PORTAL_JWKS_URL", "") or "").strip()
+    if not jwks_url:
+        logger.warning("AUTH_MODE=portal but PORTAL_JWKS_URL is not configured")
+        return None
+
+    raw_token: str | None = None
+    for name in settings.PORTAL_COOKIE_NAMES:
+        value = request.COOKIES.get(name, "").strip()
+        if value:
+            raw_token = value
+            break
+
+    if not raw_token:
+        return None
+
+    issuer = (getattr(settings, "PORTAL_ISSUER", "") or "").strip() or None
+
+    try:
+        client = _get_jwks_client(jwks_url)
+        signing_key = client.get_signing_key_from_jwt(raw_token)
+        claims = _jwt.decode(
+            raw_token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=issuer,
+            options={"require": ["sub", "email", "exp"]},
+        )
+    except Exception as exc:
+        logger.warning("portal JWT verification failed: %s", exc)
+        return None
+
+    subject = (claims.get("sub") or "").strip()
+    email = (claims.get("email") or "").strip()
+    display_name = (claims.get("name") or email).strip()
+
+    if not subject or not email:
+        return None
+
+    roles_raw: list[str] = []
+    role_single = claims.get("role", "")
+    if isinstance(role_single, str) and role_single.strip():
+        roles_raw.append(role_single.strip())
+    roles_list = claims.get("roles") or []
+    if isinstance(roles_list, list):
+        for r in roles_list:
+            if isinstance(r, str) and r.strip() and r.strip() not in roles_raw:
+                roles_raw.append(r.strip())
+
+    roles = [normalize_role_code(r) for r in roles_raw if normalize_role_code(r)]
+    return PortalIdentity(
+        subject=subject,
+        email=email,
+        display_name=display_name,
+        roles=roles,
+        source=AccountSession.SOURCE_PORTAL_JWT,
+    )
+
+
+def _resolve_portal_identity_from_header(request) -> PortalIdentity | None:
     subject = _get_header(request, "X-Portal-Subject", "X-Portal-User-Sub")
     email = _get_header(request, "X-Portal-Email", "X-Portal-User-Email")
     display_name = _get_header(request, "X-Portal-Name", "X-Portal-User-Name")
@@ -60,25 +165,13 @@ def resolve_portal_identity(request) -> PortalIdentity | None:
     if not subject or not email:
         return None
 
-    mode = settings.AUTH_MODE
-    if mode not in {"dev-header", "portal"}:
-        return None
-
-    if mode == "portal":
-        verified = (_get_header(request, "X-Portal-Verified") or "").strip().lower()
-        if verified not in {"1", "true", "yes", "on"}:
-            return None
-        source = AccountSession.SOURCE_PORTAL_HEADER
-    else:
-        source = AccountSession.SOURCE_DEV_HEADER
-
     roles = [normalize_role_code(role) for role in roles_text.split(",") if normalize_role_code(role)]
     return PortalIdentity(
         subject=subject.strip(),
         email=email.strip(),
         display_name=(display_name or email).strip(),
         roles=roles,
-        source=source,
+        source=AccountSession.SOURCE_DEV_HEADER,
     )
 
 

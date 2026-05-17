@@ -1,12 +1,14 @@
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.http import HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import Account, AccountSession
 from .services import (
+    _get_jwks_client,
+    _jwt,
     account_payload,
     build_portal_login_url,
     end_account_session,
@@ -122,3 +124,94 @@ def logout_view(request):
     end_account_session(request.session.session_key)
     logout(request)
     return redirect(return_to)
+
+
+@require_GET
+def jwt_check_view(request):
+    if not (settings.DEBUG or (request.user.is_authenticated and request.user.is_staff)):
+        return HttpResponseForbidden("This page is only available in DEBUG mode or to staff users.")
+
+    import datetime
+
+    cookie_names = list(settings.PORTAL_COOKIE_NAMES)
+    jwks_url = (getattr(settings, "PORTAL_JWKS_URL", "") or "").strip()
+    issuer = (getattr(settings, "PORTAL_ISSUER", "") or "").strip()
+    auth_mode = settings.AUTH_MODE
+
+    # Find the first present cookie
+    raw_token: str | None = None
+    found_cookie_name: str | None = None
+    cookie_status: list[dict] = []
+    for name in cookie_names:
+        value = request.COOKIES.get(name, "").strip()
+        present = bool(value)
+        if present and raw_token is None:
+            raw_token = value
+            found_cookie_name = name
+        masked = (value[:12] + "..." + value[-6:]) if len(value) > 20 else (value or "—")
+        cookie_status.append({"name": name, "present": present, "masked": masked if present else "—"})
+
+    # Decode without verification to inspect claims
+    unverified_header: dict | None = None
+    unverified_claims: dict | None = None
+    unverified_error: str | None = None
+    if raw_token:
+        try:
+            unverified_header = _jwt.get_unverified_header(raw_token)
+            unverified_claims = _jwt.decode(
+                raw_token,
+                options={"verify_signature": False},
+                algorithms=["RS256"],
+            )
+        except Exception as exc:
+            unverified_error = str(exc)
+
+    # Check expiry from unverified claims
+    exp_info: dict | None = None
+    if unverified_claims and "exp" in unverified_claims:
+        exp_ts = unverified_claims["exp"]
+        try:
+            exp_dt = datetime.datetime.fromtimestamp(exp_ts, tz=datetime.timezone.utc)
+            now = datetime.datetime.now(tz=datetime.timezone.utc)
+            exp_info = {
+                "timestamp": exp_ts,
+                "datetime": exp_dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                "expired": now > exp_dt,
+                "remaining_seconds": max(0, int((exp_dt - now).total_seconds())),
+            }
+        except Exception:
+            exp_info = {"timestamp": exp_ts, "datetime": "—", "expired": None, "remaining_seconds": 0}
+
+    # Signature verification
+    verify_result: dict = {"status": "skipped", "error": None}
+    if raw_token and jwks_url:
+        try:
+            client = _get_jwks_client(jwks_url)
+            signing_key = client.get_signing_key_from_jwt(raw_token)
+            _jwt.decode(
+                raw_token,
+                signing_key.key,
+                algorithms=["RS256"],
+                issuer=issuer or None,
+                options={"require": ["sub", "email", "exp"]},
+            )
+            verify_result = {"status": "pass", "error": None}
+        except Exception as exc:
+            verify_result = {"status": "fail", "error": str(exc)}
+    elif raw_token and not jwks_url:
+        verify_result = {"status": "skipped", "error": "PORTAL_JWKS_URL is not configured"}
+
+    context = {
+        "auth_mode": auth_mode,
+        "jwks_url": jwks_url or "—",
+        "issuer": issuer or "—",
+        "cookie_names": cookie_names,
+        "cookie_status": cookie_status,
+        "found_cookie_name": found_cookie_name,
+        "unverified_header": unverified_header,
+        "unverified_claims": unverified_claims,
+        "unverified_error": unverified_error,
+        "exp_info": exp_info,
+        "verify_result": verify_result,
+    }
+    return render(request, "accounts/jwt_check.html", context)

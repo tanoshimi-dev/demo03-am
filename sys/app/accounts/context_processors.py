@@ -15,6 +15,7 @@ def demo_context(request):
     if auth_mode != "dev-header":
         return {
             "auth_mode": auth_mode,
+            "debug": settings.DEBUG,
             "demo_accounts": [],
             "current_account": account,
             "can_manage": can_manage,
@@ -27,6 +28,7 @@ def demo_context(request):
 
     return {
         "auth_mode": auth_mode,
+        "debug": settings.DEBUG,
         "demo_accounts": demo_accounts,
         "current_account": account,
         "can_manage": can_manage,

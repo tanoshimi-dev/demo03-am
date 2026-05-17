@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}JWT診断 — demo03_am{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <h1>🔍 JWT Cookie 診断</h1>
+</div>
+
+{# ── Settings summary ── #}
+<div class="card">
+    <p class="eyebrow">設定</p>
+    <dl class="detail-list">
+        <dt>AUTH_MODE</dt>
+        <dd>
+            <code>{{ auth_mode }}</code>
+            {% if auth_mode == "portal" %}
+                <span class="status-badge status-approved" style="margin-left:8px">portal mode (本番)</span>
+            {% else %}
+                <span class="status-badge" style="margin-left:8px">{{ auth_mode }}</span>
+            {% endif %}
+        </dd>
+        <dt>PORTAL_JWKS_URL</dt>
+        <dd><code>{{ jwks_url }}</code></dd>
+        <dt>PORTAL_ISSUER</dt>
+        <dd><code>{{ issuer }}</code></dd>
+        <dt>PORTAL_COOKIE_NAMES</dt>
+        <dd>
+            {% for name in cookie_names %}
+                <code>{{ name }}</code>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </dd>
+    </dl>
+</div>
+
+{# ── Cookie presence ── #}
+<div class="card">
+    <p class="eyebrow">Cookie 確認</p>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Cookie 名</th>
+                    <th>存在</th>
+                    <th>値（マスク済）</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in cookie_status %}
+                <tr>
+                    <td><code>{{ c.name }}</code></td>
+                    <td>
+                        {% if c.present %}
+                            <span class="status-badge status-approved">✓ あり</span>
+                        {% else %}
+                            <span class="status-badge status-rejected">✗ なし</span>
+                        {% endif %}
+                    </td>
+                    <td><code class="text-muted">{{ c.masked }}</code></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── JWT analysis ── #}
+{% if found_cookie_name %}
+<div class="card">
+    <p class="eyebrow">JWT 解析（署名検証なし）— <code>{{ found_cookie_name }}</code></p>
+
+    {% if unverified_error %}
+        <p class="field-error">⚠ JWT のデコードに失敗しました: <code>{{ unverified_error }}</code></p>
+    {% else %}
+
+        {% if unverified_header %}
+        <h3 style="margin:0 0 8px">ヘッダー</h3>
+        <dl class="detail-list" style="margin-bottom:16px">
+            <dt>alg</dt><dd><code>{{ unverified_header.alg }}</code></dd>
+            {% if unverified_header.kid %}<dt>kid</dt><dd><code>{{ unverified_header.kid }}</code></dd>{% endif %}
+            {% if unverified_header.typ %}<dt>typ</dt><dd><code>{{ unverified_header.typ }}</code></dd>{% endif %}
+        </dl>
+        {% endif %}
+
+        {% if unverified_claims %}
+        <h3 style="margin:0 0 8px">クレーム（ペイロード）</h3>
+        <dl class="detail-list" style="margin-bottom:16px">
+            {% if unverified_claims.sub %}<dt>sub</dt><dd><code>{{ unverified_claims.sub }}</code></dd>{% endif %}
+            {% if unverified_claims.email %}<dt>email</dt><dd><code>{{ unverified_claims.email }}</code></dd>{% endif %}
+            {% if unverified_claims.name %}<dt>name</dt><dd><code>{{ unverified_claims.name }}</code></dd>{% endif %}
+            {% if unverified_claims.iss %}<dt>iss</dt><dd><code>{{ unverified_claims.iss }}</code></dd>{% endif %}
+            {% if unverified_claims.role %}<dt>role</dt><dd><code>{{ unverified_claims.role }}</code></dd>{% endif %}
+            {% if unverified_claims.roles %}
+                <dt>roles</dt>
+                <dd>
+                    {% for r in unverified_claims.roles %}
+                        <code>{{ r }}</code>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </dd>
+            {% endif %}
+            {% if exp_info %}
+                <dt>exp</dt>
+                <dd>
+                    <code>{{ exp_info.datetime }}</code>
+                    {% if exp_info.expired %}
+                        <span class="status-badge status-rejected" style="margin-left:8px">期限切れ</span>
+                    {% else %}
+                        <span class="status-badge status-approved" style="margin-left:8px">有効（残 {{ exp_info.remaining_seconds }}秒）</span>
+                    {% endif %}
+                </dd>
+            {% endif %}
+        </dl>
+
+        <details style="margin-top:8px">
+            <summary class="text-muted" style="cursor:pointer">全クレームを JSON で表示</summary>
+            <pre style="background:var(--surface-muted);border:1px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto;font-size:0.85rem;margin-top:8px">{{ unverified_claims }}</pre>
+        </details>
+        {% endif %}
+    {% endif %}
+</div>
+
+{# ── Verification result ── #}
+<div class="card">
+    <p class="eyebrow">署名検証結果</p>
+    {% if verify_result.status == "pass" %}
+        <p style="font-size:1.1rem;font-weight:700;color:#0a3622">
+            ✅ 検証 PASS — 署名・Issuer・期限すべて有効
+        </p>
+    {% elif verify_result.status == "fail" %}
+        <p style="font-size:1.1rem;font-weight:700;color:#58151c">
+            ❌ 検証 FAIL
+        </p>
+        <p class="field-error"><code>{{ verify_result.error }}</code></p>
+    {% else %}
+        <p class="text-muted">⏸ スキップ
+            {% if verify_result.error %} — {{ verify_result.error }}{% endif %}
+        </p>
+    {% endif %}
+</div>
+
+{% else %}
+{# No cookie found #}
+<div class="card notice-card">
+    <p style="margin:0">
+        <strong>Cookie が見つかりません。</strong><br>
+        <span class="text-muted">
+            ブラウザに <code>{{ cookie_names|join:", " }}</code> Cookie がセットされていません。<br>
+            portal からハンドオーバーされた後に再度このページを開いてください。
+        </span>
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

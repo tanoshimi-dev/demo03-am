@@ -49,3 +49,4 @@ docker-data/
 postgres-data/
 tmp/
 temp/
+*.prod.yml
